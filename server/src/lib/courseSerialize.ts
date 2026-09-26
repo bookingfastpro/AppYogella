@@ -29,6 +29,7 @@ export function serializeCourse(
     kind: course.kind as "COURSE" | "ARTICLE",
     universe: course.universe.label,
     category: course.category,
+    moods: course.moods,
     durationMin: minutes,
     meta: `${minutes} min`,
     premium: course.premium,

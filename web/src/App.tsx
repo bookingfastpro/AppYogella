@@ -6,6 +6,7 @@ import Register from './pages/Register'
 import Home from './pages/Home'
 import Explorer from './pages/Explorer'
 import Categorie from './pages/Categorie'
+import Humeur from './pages/Humeur'
 import Programme from './pages/Programme'
 import Recherche from './pages/Recherche'
 import Lecteur from './pages/Lecteur'
@@ -37,6 +38,7 @@ export default function App() {
             <Route path="home" element={<Home />} />
             <Route path="explorer" element={<Explorer />} />
             <Route path="categorie/:slug" element={<Categorie />} />
+            <Route path="humeur/:key" element={<Humeur />} />
             <Route path="recherche" element={<Recherche />} />
             <Route path="experts" element={<Experts />} />
             <Route path="pratique" element={<Pratique />} />

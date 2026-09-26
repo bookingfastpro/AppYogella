@@ -55,6 +55,7 @@ export interface Course {
   kind: 'COURSE' | 'ARTICLE'
   universe: string
   category: string | null
+  moods: string[]
   durationMin: number
   meta: string
   premium: boolean

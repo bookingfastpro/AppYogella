@@ -46,12 +46,13 @@ catalogRouter.get("/universes", async (_req, res) => {
 });
 
 catalogRouter.get("/courses", async (req, res) => {
-  const { universe, category, search, kind } = req.query as Record<string, string | undefined>;
+  const { universe, category, search, kind, mood } = req.query as Record<string, string | undefined>;
   const hasAccess = req.user?.hasAccess ?? false;
 
   const courses = await prisma.course.findMany({
     where: {
       ...publishedWhere(),
+      ...(mood ? { moods: { has: mood } } : {}),
       ...(universe ? { universe: { label: universe } } : {}),
       ...(category && category !== "Tous" ? { category } : {}),
       ...(kind ? { kind } : {}),

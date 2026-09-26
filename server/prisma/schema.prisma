@@ -87,6 +87,8 @@ model Course {
   kind            String    @default("COURSE")
   universeId      String    @map("category_id") @db.Uuid
   category        String?   @map("subcategory")
+  /// Humeurs de l'accueil (clés de server/src/lib/moods.ts).
+  moods           String[]  @default([])
   durationSeconds Int       @map("duration_seconds")
   level           String?
   premium         Boolean   @default(false) @map("is_premium")

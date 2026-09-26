@@ -2,7 +2,7 @@ import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { api } from './api'
 import type { Course, Universe, ProgramSummary, ProgramDetail, Expert } from './api'
 
-export function useCourses(params: { universe?: string; category?: string; search?: string; kind?: string } = {}) {
+export function useCourses(params: { universe?: string; category?: string; search?: string; kind?: string; mood?: string } = {}) {
   const qs = new URLSearchParams(Object.entries(params).filter(([, v]) => v) as [string, string][]).toString()
   return useQuery({
     queryKey: ['courses', params],

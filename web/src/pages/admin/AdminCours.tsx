@@ -1,11 +1,38 @@
 import { useRef, useState } from 'react'
 import { useAdminCourses, useAddCourse, useUpdateCourse, useDeleteCourse, useUploadVideo, type AdminCourse } from '../../lib/adminHooks'
 import { useUniverses } from '../../lib/hooks'
+import { TAGGABLE_MOODS } from '../../lib/moods'
 import { EditSheet, ImagePicker } from '../../components/AdminEdit'
 import { useToast } from '../../lib/ToastContext'
 import { ApiError } from '../../lib/api'
 import { IconUpload, IconTrash, IconPencil } from '../../components/icons'
 import { Loader } from '../../components/Loader'
+
+/** Humeurs de l'accueil à associer au cours : plusieurs choix possibles. */
+function MoodPicker({ value, onChange }: { value: string[]; onChange: (v: string[]) => void }) {
+  return (
+    <div className="field">
+      <label>Humeurs (accueil)</label>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+        {TAGGABLE_MOODS.map((m) => {
+          const on = value.includes(m.key)
+          return (
+            <button
+              key={m.key}
+              type="button"
+              className="tag"
+              aria-pressed={on}
+              style={{ border: 0, cursor: 'pointer', background: on ? m.bg : 'var(--color-neutral-200)', color: on ? m.fg : 'var(--color-neutral-700)', fontWeight: on ? 700 : 500 }}
+              onClick={() => onChange(on ? value.filter((k) => k !== m.key) : [...value, m.key])}
+            >
+              {on ? '✓ ' : ''}{m.label}
+            </button>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
 
 /** Libellés des univers, dans l'ordre d'Explorer. */
 function useUniverseLabels() {
@@ -29,6 +56,7 @@ export default function AdminCours() {
   // Les univers arrivent de l'API : on retombe sur le premier tant que rien n'est choisi.
   const universe = universeChoice || UNIVERSES[0] || ''
   const [premium, setPremium] = useState(true)
+  const [moods, setMoods] = useState<string[]>([])
   const [videoUrl, setVideoUrl] = useState<string | null>(null)
   const [fileName, setFileName] = useState('')
   const [youtube, setYoutube] = useState('')
@@ -60,6 +88,7 @@ export default function AdminCours() {
         durationMin,
         universe,
         premium,
+        moods,
         videoUrl: videoUrl ?? undefined,
         youtubeId: youtube.trim() || undefined,
       })
@@ -71,6 +100,7 @@ export default function AdminCours() {
     setTitle('')
     setDuration('')
     setVideoUrl(null)
+    setMoods([])
     setYoutube('')
     setFileName('')
     if (fileInput.current) fileInput.current.value = ''
@@ -97,6 +127,7 @@ export default function AdminCours() {
           </span>
           <span style={{ fontSize: 13.5 }}>Réservé aux abonnées</span>
         </div>
+        <MoodPicker value={moods} onChange={setMoods} />
         <label className={`dropzone${fileName ? ' has-file' : ''}`}>
           <IconUpload size={18} />
           {fileName || 'Déposer le fichier vidéo'}
@@ -190,6 +221,7 @@ function CourseEditSheet({
   const [youtube, setYoutube] = useState(course.youtubeId ?? '')
   const [thumb, setThumb] = useState<string | null>(course.customThumbnailUrl)
   const [premium, setPremium] = useState(course.premium)
+  const [moods, setMoods] = useState<string[]>(course.moods)
   const UNIVERSES = useUniverseLabels()
 
   // Miniature YouTube du lien en cours de saisie, pour l'aperçu « image par défaut ».
@@ -205,6 +237,7 @@ function CourseEditSheet({
       durationMin: parseInt(duration.replace(/\D/g, ''), 10) || course.durationMin,
       universe,
       premium,
+      moods,
       youtubeId: youtube,
       thumbnailUrl: thumb ?? '',
     })}>
@@ -241,6 +274,7 @@ function CourseEditSheet({
         </span>
         <span style={{ fontSize: 13.5 }}>{premium ? 'Réservé aux abonnées' : 'Accès gratuit'}</span>
       </div>
+      <MoodPicker value={moods} onChange={setMoods} />
       <div className="field">
         <label htmlFor="ec-yt">Lien YouTube</label>
         <input

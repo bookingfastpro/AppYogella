@@ -49,7 +49,7 @@ export default function Home() {
             key={m.label}
             className="mood-btn"
             style={m.span ? { gridColumn: `span ${m.span}` } : undefined}
-            onClick={() => navigate(m.label === 'Mal au dos' ? '/recherche' : '/explorer')}
+            onClick={() => navigate(m.key ? `/humeur/${m.key}` : '/explorer')}
           >
             <span className="icon-circle" style={{ background: m.bg, color: m.fg }}>
               <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round">

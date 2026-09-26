@@ -9,6 +9,7 @@ import { uniqueSlug } from "../lib/slug.js";
 import { AuthApiError, adminUpdateUserEmail } from "../lib/supabase.js";
 import { displayName } from "../middleware/auth.js";
 import { manualCustomerId } from "./subscription.js";
+import { MOOD_KEYS } from "../lib/moods.js";
 
 export const adminRouter = Router();
 
@@ -25,6 +26,7 @@ adminRouter.get("/courses", async (_req, res) => {
       kind: c.kind,
       universe: c.universe.label,
       category: c.category,
+      moods: c.moods,
       durationMin: durationMin(c),
       meta: `${c.universe.label} · ${durationMin(c)} min${c.publishedAt ? "" : " · brouillon"}`,
       premium: c.premium,
@@ -44,6 +46,11 @@ const courseSchema = z.object({
   durationMin: z.coerce.number().int().positive(),
   universe: z.string().trim().min(1),
   category: z.string().trim().optional(),
+  // Doublons retirés ; l'ordre suit celui de l'accueil.
+  moods: z
+    .array(z.enum(MOOD_KEYS))
+    .optional()
+    .transform((v) => (v === undefined ? undefined : MOOD_KEYS.filter((k) => v.includes(k)))),
   premium: z.boolean().default(true),
   kind: z.enum(["COURSE", "ARTICLE"]).default("COURSE"),
   videoUrl: z.string().optional(),
