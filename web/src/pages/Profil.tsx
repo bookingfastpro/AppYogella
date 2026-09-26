@@ -40,9 +40,6 @@ export default function Profil() {
 
   const rows = [
     ...(user.isAdmin ? [{ label: 'Administration', go: () => navigate('/admin') }] : []),
-    { label: 'Nos experts', go: () => navigate('/experts') },
-    { label: 'Mes téléchargements', go: () => flash('Écran non maquetté') },
-    { label: 'Rappels de pratique', go: () => flash('Écran non maquetté') },
     { label: 'Aide & contact', go: () => flash('Écran non maquetté') },
     { label: 'Se déconnecter', go: () => logout().then(() => navigate('/login')) },
   ]
