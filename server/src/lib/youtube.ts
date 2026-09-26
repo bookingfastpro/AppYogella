@@ -40,9 +40,13 @@ export function parseYoutubeId(input: string): string | null {
   return v && ID.test(v) ? v : null;
 }
 
-/** Miniature par défaut d'une vidéo YouTube (toujours disponible). */
+/**
+ * Miniature par défaut d'une vidéo YouTube (toujours disponible).
+ * mqdefault est en 16:9 ; hqdefault/sddefault sont en 4:3 avec des bandes
+ * noires en haut et en bas, visibles dans les vignettes.
+ */
 export function youtubeThumbnail(id: string): string {
-  return `https://img.youtube.com/vi/${id}/hqdefault.jpg`;
+  return `https://img.youtube.com/vi/${id}/mqdefault.jpg`;
 }
 
 /** URL d'intégration, sans cookies de suivi tant que la vidéo n'est pas lue. */

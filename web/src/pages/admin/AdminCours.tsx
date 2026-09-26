@@ -194,9 +194,9 @@ function CourseEditSheet({
 
   // Miniature YouTube du lien en cours de saisie, pour l'aperçu « image par défaut ».
   const ytFallback = /^[A-Za-z0-9_-]{11}$/.test(youtube.trim())
-    ? `https://img.youtube.com/vi/${youtube.trim()}/hqdefault.jpg`
+    ? `https://img.youtube.com/vi/${youtube.trim()}/mqdefault.jpg`
     : course.youtubeId
-    ? `https://img.youtube.com/vi/${course.youtubeId}/hqdefault.jpg`
+    ? `https://img.youtube.com/vi/${course.youtubeId}/mqdefault.jpg`
     : null
 
   return (

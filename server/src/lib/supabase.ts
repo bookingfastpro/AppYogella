@@ -10,7 +10,11 @@ import { createRemoteJWKSet, jwtVerify } from "jose";
 
 function env(name: string): string {
   const value = process.env[name];
-  if (!value) throw new Error(`${name} n'est pas défini — configurez Supabase dans server/.env.`);
+  if (!value) {
+    throw new Error(
+      `${name} n'est pas défini — ajoutez-le aux variables d'environnement (server/.env en local, Coolify en production).`,
+    );
+  }
   return value;
 }
 
