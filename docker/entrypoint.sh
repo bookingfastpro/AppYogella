@@ -22,6 +22,26 @@ echo "Connexions configurées :"
 describe_url "DATABASE_URL" "$DATABASE_URL"
 describe_url "DIRECT_URL" "$DIRECT_URL"
 
+# Variables Supabase Auth : présence seulement, jamais la valeur. Une variable
+# absente ici l'est au runtime — dans Coolify, vérifier qu'elle n'est pas
+# cochée « Build Variable » uniquement, puis redéployer.
+missing=""
+echo "Variables Supabase :"
+for name in SUPABASE_URL SUPABASE_PUBLISHABLE_KEY SUPABASE_SECRET_KEY; do
+  eval "value=\${$name}"
+  if [ -n "$value" ]; then
+    printf '  %-26s définie (%s caractères)\n' "$name" "${#value}"
+  else
+    printf '  %-26s ABSENTE\n' "$name"
+    missing="$missing $name"
+  fi
+done
+if [ -n "$missing" ]; then
+  echo "Variables manquantes au démarrage :$missing" >&2
+  echo "Coolify → Environment Variables : ajoutez-les (sans « Build Variable » seul), puis Redeploy." >&2
+  exit 1
+fi
+
 # Les migrations ne font que des ajouts au schéma Supabase existant ; les
 # données (cours, programmes, comptes) vivent dans Supabase, sans seed.
 echo "Application des migrations Prisma… (via DIRECT_URL)"
