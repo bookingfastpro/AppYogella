@@ -2,6 +2,7 @@ import { useState, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../lib/AuthContext'
 import { ApiError } from '../lib/api'
+import { AuthScreen } from '../components/AuthScreen'
 
 export default function Register() {
   const { register } = useAuth()
@@ -27,40 +28,50 @@ export default function Register() {
   }
 
   return (
-    <div className="auth-screen">
-      <div style={{ textAlign: 'center' }}>
-        <div className="brand">Yogella</div>
-        <p className="text-muted" style={{ marginTop: 6 }}>Yoga, méditation et bien-être, à ton rythme</p>
-      </div>
-      {error && <div className="auth-error">{error}</div>}
-      <form onSubmit={onSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-        <div className="field">
-          <label htmlFor="name">Prénom</label>
-          <input id="name" className="input" required value={name} onChange={(e) => setName(e.target.value)} />
-        </div>
-        <div className="field">
-          <label htmlFor="email">Email</label>
-          <input id="email" className="input" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
-        </div>
-        <div className="field">
-          <label htmlFor="password">Mot de passe</label>
-          <input
-            id="password"
-            className="input"
-            type="password"
-            required
-            minLength={8}
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-          />
-        </div>
-        <button className="btn btn-primary" type="submit" disabled={busy} style={{ marginTop: 6 }}>
+    <AuthScreen>
+      <form className="auth-hero-form" onSubmit={onSubmit}>
+        {error && <div className="auth-hero-error" role="alert">{error}</div>}
+        <input
+          className="auth-hero-input"
+          placeholder="Prénom"
+          aria-label="Prénom"
+          autoComplete="given-name"
+          autoFocus
+          required
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+        />
+        <input
+          className="auth-hero-input"
+          type="email"
+          placeholder="Email"
+          aria-label="Email"
+          autoComplete="email"
+          required
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+        />
+        <input
+          className="auth-hero-input"
+          type="password"
+          placeholder="Mot de passe (8 caractères minimum)"
+          aria-label="Mot de passe"
+          autoComplete="new-password"
+          required
+          minLength={8}
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+        />
+        <button className="auth-hero-cta" type="submit" disabled={busy}>
           {busy ? 'Création…' : 'Créer mon compte'}
         </button>
       </form>
-      <p style={{ textAlign: 'center', fontSize: 13.5 }} className="text-muted">
-        Déjà un compte ? <Link to="/login">Se connecter</Link>
+      <p className="auth-hero-switch">
+        Déjà un compte ?{' '}
+        <Link to="/login" state={{ showForm: true }}>
+          Se connecter
+        </Link>
       </p>
-    </div>
+    </AuthScreen>
   )
 }

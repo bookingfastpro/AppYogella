@@ -15,41 +15,31 @@ navigateur ──► Traefik (Coolify) ──► conteneur :3000 ──► Supab
 
 ## 1. En local
 
-### Option A — Docker Compose (recommandé, rien d'autre à installer)
+L'application utilise toujours le projet Supabase (base **et** Supabase Auth),
+y compris en local : il n'y a plus de Postgres local ni de données de démo.
+Renseigner d'abord `server/.env` à partir de `server/.env.example`.
 
-Lance Postgres + l'application, avec la même image que la production :
-
-```bash
-docker compose up --build
-```
-
-→ <http://localhost:3000>. La base est migrée et peuplée automatiquement au
-premier démarrage.
-
-### Option B — Supabase en local (CLI Supabase)
+### Option A — Docker Compose (même image que la production)
 
 ```bash
-supabase init
-supabase start          # Postgres sur 127.0.0.1:54322
+docker compose up --build     # http://localhost:3000
 ```
 
-Puis dans `server/.env` :
-
-```
-DATABASE_URL="postgresql://postgres:postgres@127.0.0.1:54322/postgres?schema=public"
-DIRECT_URL="postgresql://postgres:postgres@127.0.0.1:54322/postgres?schema=public"
-```
-
-### Option C — Node en direct (itération rapide sur le front)
+### Option B — Node en direct (itération rapide sur le front)
 
 ```bash
-cd server && cp .env.example .env && npm install
-npx prisma migrate dev && npm run seed && npm run dev   # :4000
-
-cd web && npm install && npm run dev                    # :5173 (proxy → :4000)
+cd server && npm install && npm run migrate && npm run dev   # :4000
+cd web && npm install && npm run dev                          # :5173 (proxy → :4000)
 ```
 
-Compte admin de démonstration : `estelle@yogella.fr` / `password123`.
+### Comptes administrateurs
+
+Les comptes sont créés par l'inscription dans l'application (Supabase Auth).
+Pour promouvoir un compte existant :
+
+```bash
+cd server && npm run create-admin -- --email=x@y.fr
+```
 
 ---
 
@@ -96,11 +86,12 @@ Le schéma est géré **par les migrations Prisma** (`server/prisma/migrations/`
 pas depuis l'éditeur SQL de Supabase — l'entrypoint du conteneur applique
 `prisma migrate deploy` à chaque déploiement.
 
-> Les tables vivent dans le schéma `public` et sont accédées via le rôle
-> `postgres`, donc la Row Level Security de Supabase n'entre pas en jeu :
-> l'autorisation est faite par l'API (JWT de session + `isAdmin`). Si vous
-> exposez un jour ces tables à `anon`/`authenticated` via PostgREST, il faudra
-> écrire les policies RLS correspondantes.
+> L'API accède aux tables via le rôle `postgres`, qui ignore la Row Level
+> Security : l'autorisation est faite par l'API (session Supabase Auth +
+> `profiles.is_admin`). Les policies RLS héritées de la première application
+> restent en place et protègent l'accès direct via PostgREST ; les tables
+> ajoutées par Yogella (`plans`, `app_settings`, `experts`) ont la RLS activée
+> sans policy, donc fermées aux clés publiques.
 
 ---
 
@@ -119,14 +110,17 @@ pas depuis l'éditeur SQL de Supabase — l'entrypoint du conteneur applique
    | Variable | Valeur |
    | --- | --- |
    | `DATABASE_URL` | URL poolée Supabase (port 6543) |
-   | `DIRECT_URL` | URL directe Supabase (port 5432) |
-   | `JWT_SECRET` | `openssl rand -hex 32` |
+   | `DIRECT_URL` | URL du pooler de sessions Supabase (port 5432) |
+   | `SUPABASE_URL` | `https://<ref>.supabase.co` |
+   | `SUPABASE_PUBLISHABLE_KEY` | clé `sb_publishable_…` |
+   | `SUPABASE_SECRET_KEY` | clé `sb_secret_…` (ne jamais l'exposer au navigateur) |
    | `WEB_ORIGIN` | `https://votre-domaine.fr` |
    | `NODE_ENV` | `production` |
-   | `SEED_ON_START` | `true` au tout premier déploiement, puis `false` |
    | `STRIPE_SECRET_KEY` | facultatif |
    | `STRIPE_WEBHOOK_SECRET` | facultatif |
-   | `STRIPE_PRICE_MONTHLY` / `STRIPE_PRICE_ANNUAL` | facultatif |
+
+   Les identifiants de prix Stripe se règlent dans la table `plans`
+   (`stripe_price_id`) ; sans eux, le prix affiché est facturé tel quel.
 
 7. Renseigner le domaine dans **Domains**, puis **Deploy**.
 
@@ -137,10 +131,8 @@ virgules si plusieurs domaines pointent sur l'application.
 ### Ce que fait l'entrypoint à chaque démarrage
 
 1. Vérifie `DATABASE_URL` (et retombe sur elle si `DIRECT_URL` est absente).
-2. `prisma migrate deploy`.
-3. Si `SEED_ON_START=true` **et** que la table `Course` est vide, exécute le
-   seed. Le garde-fou est important : `prisma/seed.ts` fait un `deleteMany` sur
-   le catalogue et écraserait les données réelles à chaque redémarrage.
+2. `prisma migrate deploy` — les migrations ne font que des ajouts au schéma
+   Supabase. Il n'y a pas de seed : le contenu vit dans Supabase.
 
 ### Webhook Stripe
 

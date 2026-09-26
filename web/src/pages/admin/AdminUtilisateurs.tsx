@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useAdminUsers, useUpdateUser, type AdminUser } from '../../lib/adminHooks'
 import { EditSheet } from '../../components/AdminEdit'
 import { useToast } from '../../lib/ToastContext'
+import { useAuth } from '../../lib/AuthContext'
 import { ApiError } from '../../lib/api'
 import { IconCircleCheck, IconCirclePause, IconPencil } from '../../components/icons'
 import { Loader } from '../../components/Loader'
@@ -11,13 +12,35 @@ const PLAN_COLORS: Record<string, { bg: string; fg: string }> = {
   Essai: { bg: 'var(--color-accent-200)', fg: 'var(--color-accent-800)' },
   Mensuel: { bg: 'var(--color-accent-2-200)', fg: 'var(--color-accent-2-800)' },
   Annuel: { bg: 'var(--color-accent-2-200)', fg: 'var(--color-accent-2-800)' },
+  Actif: { bg: 'var(--color-accent-2-200)', fg: 'var(--color-accent-2-800)' },
 }
 
 export default function AdminUtilisateurs() {
   const { data, isPending } = useAdminUsers()
   const updateUser = useUpdateUser()
   const flash = useToast()
+  const { user: me } = useAuth()
   const [editing, setEditing] = useState<AdminUser | null>(null)
+
+  async function cyclePlan(u: AdminUser) {
+    try {
+      const res = await updateUser.mutateAsync({ id: u.id, cyclePlan: true })
+      flash(`Abonnement de ${u.name} : ${(res as { user: { plan: string } }).user.plan}`)
+    } catch (err) {
+      flash(err instanceof ApiError ? err.message : "Impossible de changer l'abonnement")
+    }
+  }
+
+  async function toggleActive(u: AdminUser) {
+    // Suspendre coupe l'accès à l'application : on demande confirmation.
+    if (u.active && !window.confirm(`Suspendre le compte de ${u.name} ? Il ne pourra plus se connecter.`)) return
+    try {
+      await updateUser.mutateAsync({ id: u.id, active: !u.active })
+      flash(u.active ? `Compte de ${u.name} suspendu` : `Compte de ${u.name} réactivé`)
+    } catch (err) {
+      flash(err instanceof ApiError ? err.message : 'Modification impossible')
+    }
+  }
 
   if (isPending) return <Loader />
 
@@ -36,11 +59,15 @@ export default function AdminUtilisateurs() {
       <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
         {(data?.users ?? []).map((u) => {
           const colors = PLAN_COLORS[u.plan]
+          const isSelf = u.id === me?.id
           return (
-            <div key={u.id} className="catalog-row">
+            <div key={u.id} className="catalog-row" style={u.active ? undefined : { opacity: 0.7 }}>
               <span className="expert-avatar" style={{ width: 38, height: 38, fontSize: 15 }}>{u.initial}</span>
               <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: 14, fontWeight: 600 }}>{u.name}</div>
+                <div style={{ fontSize: 14, fontWeight: 600 }}>
+                  {u.name}
+                  {!u.active && <span style={{ fontSize: 11.5, fontWeight: 600, color: 'var(--color-accent-700)' }}> · suspendu</span>}
+                </div>
                 <div className="text-muted" style={{ fontSize: 11.5, marginTop: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                   {u.email}
                 </div>
@@ -48,7 +75,9 @@ export default function AdminUtilisateurs() {
               <button
                 className="tag"
                 style={{ border: 0, cursor: 'pointer', background: colors.bg, color: colors.fg }}
-                onClick={() => updateUser.mutate({ id: u.id, cyclePlan: true })}
+                title="Changer d'abonnement"
+                disabled={updateUser.isPending}
+                onClick={() => cyclePlan(u)}
               >
                 {u.plan}
               </button>
@@ -56,9 +85,15 @@ export default function AdminUtilisateurs() {
                 <IconPencil size={17} />
               </button>
               <button
-                style={{ border: 0, background: 'none', cursor: 'pointer', display: 'flex', padding: 2, color: u.active ? 'var(--color-accent-2-700)' : 'var(--color-accent-700)' }}
-                title={u.active ? 'Suspendre' : 'Réactiver'}
-                onClick={() => updateUser.mutate({ id: u.id, active: !u.active })}
+                style={{
+                  border: 0, background: 'none', display: 'flex', padding: 2,
+                  cursor: isSelf ? 'not-allowed' : 'pointer', opacity: isSelf ? 0.35 : 1,
+                  color: u.active ? 'var(--color-accent-2-700)' : 'var(--color-accent-700)',
+                }}
+                title={isSelf ? 'Votre propre compte ne peut pas être suspendu' : u.active ? 'Compte actif — suspendre' : 'Compte suspendu — réactiver'}
+                aria-label={u.active ? `Suspendre le compte de ${u.name}` : `Réactiver le compte de ${u.name}`}
+                disabled={isSelf || updateUser.isPending}
+                onClick={() => toggleActive(u)}
               >
                 {u.active ? <IconCircleCheck size={20} /> : <IconCirclePause size={20} />}
               </button>
@@ -67,8 +102,9 @@ export default function AdminUtilisateurs() {
         })}
       </div>
       <div className="text-muted" style={{ fontSize: 12, lineHeight: 1.5 }}>
-        Touchez l'étiquette pour changer de formule, le crayon pour éditer le compte, la dernière icône
-        pour le suspendre ou le réactiver.
+        Touchez l'étiquette pour changer d'abonnement (Aucun → Essai → Mensuel → Annuel), le crayon pour
+        éditer le compte. La dernière icône ne concerne pas l'abonnement : elle suspend ou réactive
+        l'accès au compte.
       </div>
 
       {editing && (

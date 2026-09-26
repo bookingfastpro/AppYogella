@@ -2,7 +2,7 @@
    Claude Design handoff (project/_ds/organic-…/styles.css). Source of truth
    for color/spacing/radius/shadow — never hard-code a hex or px value these
    tokens already carry. */
-@import url('https://fonts.googleapis.com/css2?family=Caprasimo:wght@400&family=Figtree:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Caprasimo:wght@400&family=Cormorant+Garamond:wght@300;400&family=Figtree:wght@300;400;500;600;700&display=swap');
 
 :root {
   --color-bg: #f5ead8;

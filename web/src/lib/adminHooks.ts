@@ -35,7 +35,8 @@ export interface AdminUser {
   initial: string
   isAdmin: boolean
   active: boolean
-  plan: 'Aucun' | 'Essai' | 'Mensuel' | 'Annuel'
+  /** « Actif » : abonnement actif sans formule connue (saisi à la main). */
+  plan: 'Aucun' | 'Essai' | 'Mensuel' | 'Annuel' | 'Actif'
 }
 
 export interface AdminPlan {

@@ -2,7 +2,7 @@ import { Router } from "express";
 import { z } from "zod";
 import { prisma } from "../lib/prisma.js";
 import { requireAuth } from "../middleware/auth.js";
-import { serializeCourse } from "../lib/courseSerialize.js";
+import { durationMin, serializeCourse, withUniverse } from "../lib/courseSerialize.js";
 
 export const userRouter = Router();
 
@@ -11,7 +11,7 @@ userRouter.use(requireAuth);
 userRouter.get("/favorites", async (req, res) => {
   const favorites = await prisma.favorite.findMany({
     where: { userId: req.user!.id },
-    include: { course: true },
+    include: { course: { include: withUniverse } },
     orderBy: { createdAt: "desc" },
   });
   res.json({ favorites: favorites.map((f) => serializeCourse(f.course, req.user!.hasAccess)) });
@@ -48,12 +48,15 @@ userRouter.post("/progress", async (req, res) => {
   const course = await prisma.course.findUnique({ where: { id: courseId } });
   if (!course) return res.status(404).json({ error: "Cours introuvable" });
 
+  // La base stocke des secondes ; le lecteur raisonne en fraction de la durée.
+  const progressSeconds = Math.round(progressPct * course.durationSeconds);
+  const done = completed ?? progressPct >= 0.95;
   const row = await prisma.watchProgress.upsert({
     where: { userId_courseId: { userId: req.user!.id, courseId } },
-    create: { userId: req.user!.id, courseId, progressPct, completed: completed ?? progressPct >= 0.95 },
-    update: { progressPct, completed: completed ?? progressPct >= 0.95 },
+    create: { userId: req.user!.id, courseId, progressSeconds, completed: done },
+    update: { progressSeconds, completed: done },
   });
-  res.json({ progress: row });
+  res.json({ progress: { ...row, progressPct } });
 });
 
 userRouter.get("/practice", async (req, res) => {
@@ -62,11 +65,10 @@ userRouter.get("/practice", async (req, res) => {
 
   const recent = await prisma.watchProgress.findMany({
     where: { userId, updatedAt: { gte: weekAgo } },
-    include: { course: true },
   });
 
   const sessionCount = recent.length;
-  const totalMin = recent.reduce((n, r) => n + r.course.durationMin * Math.min(1, r.progressPct), 0);
+  const totalMin = recent.reduce((n, r) => n + r.progressSeconds / 60, 0);
 
   const dayBuckets = new Set(recent.map((r) => r.updatedAt.getDay()));
   const weekOrderJs = [1, 2, 3, 4, 5, 6, 0]; // Mon..Sun
@@ -78,12 +80,13 @@ userRouter.get("/practice", async (req, res) => {
   const last = await prisma.watchProgress.findFirst({
     where: { userId, completed: false },
     orderBy: { updatedAt: "desc" },
-    include: { course: true },
+    include: { course: { include: withUniverse } },
   });
 
   const routines = await prisma.program.findMany({
-    where: { isRoutine: true },
+    where: { isRoutine: true, published: true },
     include: { courses: { include: { course: true } } },
+    orderBy: { sortOrder: "asc" },
   });
 
   res.json({
@@ -95,12 +98,15 @@ userRouter.get("/practice", async (req, res) => {
     },
     week,
     resume: last
-      ? { ...serializeCourse(last.course, req.user!.hasAccess), progressPct: last.progressPct }
+      ? {
+          ...serializeCourse(last.course, req.user!.hasAccess),
+          progressPct: Math.min(1, last.progressSeconds / last.course.durationSeconds),
+        }
       : null,
     routines: routines.map((r) => ({
       id: r.id,
       title: r.title,
-      meta: `${r.courses.reduce((n, c) => n + c.course.durationMin, 0)} min · ${r.courses.length} séance${
+      meta: `${r.courses.reduce((n, c) => n + durationMin(c.course), 0)} min · ${r.courses.length} séance${
         r.courses.length === 1 ? "" : "s"
       }`,
       locked: r.courses.length > 0 && r.courses.every((c) => c.course.premium && !req.user!.hasAccess),

@@ -1,25 +1,32 @@
-import type { Subscription, User } from "@prisma/client";
-import { isSubscriptionActive } from "../middleware/auth.js";
+import type { Profile, Subscription } from "@prisma/client";
+import { displayName, isSubscriptionActive } from "../middleware/auth.js";
 
-type UserWithSub = User & { subscription: Subscription | null };
+type ProfileWithSub = Profile & { subscription: Subscription | null };
 
-export function serializeMe(user: UserWithSub) {
-  const sub = user.subscription;
+/** Statut Stripe → les quatre états que connaît le front. */
+export function subscriptionState(status: string | null | undefined): "NONE" | "TRIALING" | "ACTIVE" | "CANCELED" {
+  if (status === "active") return "ACTIVE";
+  if (status === "trialing") return "TRIALING";
+  if (!status || status === "incomplete") return "NONE";
+  return "CANCELED";
+}
+
+export function serializeMe(profile: ProfileWithSub) {
+  const sub = profile.subscription;
+  const name = displayName(profile);
   return {
-    id: user.id,
-    name: user.name,
-    email: user.email,
-    initial: user.name.slice(0, 1).toUpperCase(),
-    isAdmin: user.isAdmin,
-    createdAt: user.createdAt,
+    id: profile.id,
+    name,
+    email: profile.email,
+    initial: name.slice(0, 1).toUpperCase(),
+    isAdmin: profile.isAdmin,
+    createdAt: profile.createdAt,
     hasAccess: isSubscriptionActive(sub?.status),
-    subscription: sub
-      ? {
-          plan: sub.plan,
-          status: sub.status,
-          currentPeriodEnd: sub.currentPeriodEnd,
-          trialEnd: sub.trialEnd,
-        }
-      : { plan: null, status: "NONE", currentPeriodEnd: null, trialEnd: null },
+    subscription: {
+      plan: (sub?.plan as "MONTHLY" | "ANNUAL" | null | undefined) ?? null,
+      status: subscriptionState(sub?.status),
+      currentPeriodEnd: sub?.currentPeriodEnd ?? null,
+      trialEnd: sub?.trialEnd ?? null,
+    },
   };
 }

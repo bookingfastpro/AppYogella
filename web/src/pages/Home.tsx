@@ -20,7 +20,7 @@ export default function Home() {
   if (programsPending) return <Loader />
 
   return (
-    <div className="screen">
+    <div className="screen home-screen">
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <div className="brand">Yogella</div>
         <div
@@ -51,7 +51,7 @@ export default function Home() {
             style={m.span ? { gridColumn: `span ${m.span}` } : undefined}
             onClick={() => navigate(m.label === 'Mal au dos' ? '/recherche' : '/explorer')}
           >
-            <span className="icon-circle">
+            <span className="icon-circle" style={{ background: m.bg, color: m.fg }}>
               <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round">
                 <path d={m.path} />
               </svg>

@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { prisma } from "../lib/prisma.js";
 import { youtubeThumbnail } from "../lib/youtube.js";
-import { serializeCourse } from "../lib/courseSerialize.js";
+import { durationMin, publishedWhere, serializeCourse, withUniverse } from "../lib/courseSerialize.js";
 
 /**
  * Couverture d'un programme : l'image choisie par l'admin, sinon la vignette de
@@ -19,11 +19,30 @@ function programCover(p: {
   return null;
 }
 
+/** Séances publiées d'un programme, dans l'ordre. */
+function programCourses() {
+  return {
+    where: { course: publishedWhere() },
+    include: { course: { include: withUniverse } },
+    orderBy: { order: "asc" as const },
+  };
+}
+
 export const catalogRouter = Router();
 
 catalogRouter.get("/universes", async (_req, res) => {
   const universes = await prisma.universe.findMany({ orderBy: { order: "asc" } });
-  res.json({ universes });
+  res.json({
+    universes: universes.map((u) => ({
+      id: u.id,
+      slug: u.slug,
+      label: u.label,
+      bg: u.bg,
+      fg: u.fg,
+      dest: u.dest,
+      order: u.order,
+    })),
+  });
 });
 
 catalogRouter.get("/courses", async (req, res) => {
@@ -32,12 +51,14 @@ catalogRouter.get("/courses", async (req, res) => {
 
   const courses = await prisma.course.findMany({
     where: {
-      ...(universe ? { universe } : {}),
+      ...publishedWhere(),
+      ...(universe ? { universe: { label: universe } } : {}),
       ...(category && category !== "Tous" ? { category } : {}),
-      ...(kind ? { kind: kind as "COURSE" | "ARTICLE" } : {}),
+      ...(kind ? { kind } : {}),
       ...(search ? { title: { contains: search, mode: "insensitive" } } : {}),
     },
-    orderBy: { createdAt: "desc" },
+    include: withUniverse,
+    orderBy: [{ publishedAt: "desc" }, { createdAt: "desc" }],
   });
 
   res.json({ courses: courses.map((c) => serializeCourse(c, hasAccess)) });
@@ -45,7 +66,10 @@ catalogRouter.get("/courses", async (req, res) => {
 
 catalogRouter.get("/courses/:id", async (req, res) => {
   const hasAccess = req.user?.hasAccess ?? false;
-  const course = await prisma.course.findUnique({ where: { id: req.params.id } });
+  const course = await prisma.course.findFirst({
+    where: { id: req.params.id, ...(req.user?.isAdmin ? {} : publishedWhere()) },
+    include: withUniverse,
+  });
   if (!course) return res.status(404).json({ error: "Cours introuvable" });
   res.json({ course: serializeCourse(course, hasAccess, { includeMedia: true }) });
 });
@@ -53,25 +77,28 @@ catalogRouter.get("/courses/:id", async (req, res) => {
 catalogRouter.get("/programs", async (req, res) => {
   const routine = req.query.routine;
   const programs = await prisma.program.findMany({
-    where: routine !== undefined ? { isRoutine: routine === "true" } : {},
-    include: { courses: { include: { course: true }, orderBy: { order: "asc" } } },
-    orderBy: { createdAt: "desc" },
+    where: { published: true, ...(routine !== undefined ? { isRoutine: routine === "true" } : {}) },
+    include: { courses: programCourses() },
+    orderBy: [{ sortOrder: "asc" }, { createdAt: "desc" }],
   });
   const hasAccess = req.user?.hasAccess ?? false;
   res.json({
-    programs: programs.map((p) => ({
-      id: p.id,
-      title: p.title,
-      description: p.description,
-      coverUrl: programCover(p),
-      isRoutine: p.isRoutine,
-      sessionCount: p.courses.length,
-      totalDurationMin: p.courses.reduce((n, pc) => n + pc.course.durationMin, 0),
-      meta: `${p.courses.length} séance${p.courses.length === 1 ? "" : "s"}${
-        p.courses.length ? " · " + minMaxDuration(p.courses.map((pc) => pc.course.durationMin)) : ""
-      }`,
-      locked: p.courses.length > 0 && p.courses.every((pc) => pc.course.premium && !hasAccess),
-    })),
+    programs: programs.map((p) => {
+      const durations = p.courses.map((pc) => durationMin(pc.course));
+      return {
+        id: p.id,
+        title: p.title,
+        description: p.description ?? p.subtitle,
+        coverUrl: programCover(p),
+        isRoutine: p.isRoutine,
+        sessionCount: p.courses.length,
+        totalDurationMin: durations.reduce((n, d) => n + d, 0),
+        meta: `${p.courses.length} séance${p.courses.length === 1 ? "" : "s"}${
+          p.courses.length ? " · " + minMaxDuration(durations) : ""
+        }`,
+        locked: p.courses.length > 0 && p.courses.every((pc) => pc.course.premium && !hasAccess),
+      };
+    }),
   });
 });
 
@@ -83,9 +110,9 @@ function minMaxDuration(durations: number[]): string {
 
 catalogRouter.get("/programs/:id", async (req, res) => {
   const hasAccess = req.user?.hasAccess ?? false;
-  const program = await prisma.program.findUnique({
-    where: { id: req.params.id },
-    include: { courses: { include: { course: true }, orderBy: { order: "asc" } } },
+  const program = await prisma.program.findFirst({
+    where: { id: req.params.id, ...(req.user?.isAdmin ? {} : { published: true }) },
+    include: { courses: programCourses() },
   });
   if (!program) return res.status(404).json({ error: "Programme introuvable" });
 
@@ -101,7 +128,7 @@ catalogRouter.get("/programs/:id", async (req, res) => {
     program: {
       id: program.id,
       title: program.title,
-      description: program.description,
+      description: program.description ?? program.subtitle,
       coverUrl: programCover(program),
       isRoutine: program.isRoutine,
       sessions: program.courses.map((pc, i) => ({
@@ -129,8 +156,8 @@ catalogRouter.get("/plans", async (_req, res) => {
 });
 
 catalogRouter.get("/experts", async (_req, res) => {
-  const experts = await prisma.expert.findMany();
+  const experts = await prisma.expert.findMany({ orderBy: { sortOrder: "asc" } });
   res.json({
-    experts: experts.map((e) => ({ ...e, initial: e.name.slice(0, 1).toUpperCase() })),
+    experts: experts.map((e) => ({ id: e.id, name: e.name, role: e.role, initial: e.name.slice(0, 1).toUpperCase() })),
   });
 });

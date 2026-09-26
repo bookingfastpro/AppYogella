@@ -1,54 +1,29 @@
-# Stack locale complète : PostgreSQL + l'application (API + front dans un seul
-# conteneur, exactement l'image déployée par Coolify).
+# L'application dans son image de production (API + front dans un seul
+# conteneur, exactement ce que déploie Coolify), branchée sur Supabase.
 #
 #   docker compose up --build   →  http://localhost:3000
 #
-# Pour brancher Supabase (local via la CLI, ou cloud) à la place du service `db` :
-# supprimer `db` et ses `depends_on`, puis renseigner DATABASE_URL / DIRECT_URL.
+# La base et les comptes vivent dans Supabase : les variables (DATABASE_URL,
+# DIRECT_URL, SUPABASE_*) sont lues dans server/.env — voir server/.env.example.
 
 services:
-  db:
-    image: postgres:16-alpine
-    restart: unless-stopped
-    environment:
-      POSTGRES_USER: yogella
-      POSTGRES_PASSWORD: yogella
-      POSTGRES_DB: yogella
-    ports:
-      # Exposé pour pouvoir lancer `npx prisma studio` / psql depuis l'hôte.
-      - "5432:5432"
-    volumes:
-      - pgdata:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U yogella -d yogella"]
-      interval: 5s
-      timeout: 5s
-      retries: 10
-
   app:
     build:
       context: .
       dockerfile: Dockerfile
     restart: unless-stopped
-    depends_on:
-      db:
-        condition: service_healthy
+    env_file:
+      - server/.env
     environment:
-      DATABASE_URL: postgresql://yogella:yogella@db:5432/yogella?schema=public
-      DIRECT_URL: postgresql://yogella:yogella@db:5432/yogella?schema=public
-      JWT_SECRET: ${JWT_SECRET:-dev-secret-change-me}
+      # Le conteneur écoute sur 3000 et sert le front lui-même.
+      PORT: 3000
+      NODE_ENV: production
       WEB_ORIGIN: ${WEB_ORIGIN:-http://localhost:3000}
-      # Peuple la base de démo au démarrage (idempotent, voir prisma/seed.ts).
-      SEED_ON_START: ${SEED_ON_START:-true}
-      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY:-}
-      STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET:-}
-      STRIPE_PRICE_MONTHLY: ${STRIPE_PRICE_MONTHLY:-}
-      STRIPE_PRICE_ANNUAL: ${STRIPE_PRICE_ANNUAL:-}
+      UPLOAD_DIR: /app/uploads
     ports:
       - "3000:3000"
     volumes:
       - uploads:/app/uploads
 
 volumes:
-  pgdata:
   uploads:

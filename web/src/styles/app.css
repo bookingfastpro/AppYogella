@@ -84,6 +84,9 @@
   width: 176px; flex: none; border-radius: 26px; background: var(--color-neutral-100);
   border: 1px solid var(--color-divider); overflow: hidden; cursor: pointer; text-align: left;
   font-family: inherit; color: inherit;
+  /* La carte est un <button> : sans ça, sa marge intérieure par défaut laisse
+     un liseré autour de la photo. */
+  padding: 0; display: block;
 }
 .prog-card .cover {
   position: relative; height: 112px; background: var(--color-neutral-200); display: flex;
@@ -113,6 +116,14 @@
   color: var(--color-accent-2-800); display: flex; align-items: center; justify-content: center;
 }
 .mood-btn .label { font-size: 12px; font-weight: 600; line-height: 1.25; text-align: center; }
+
+/* Accueil : textes quasi noirs et marque vert forêt, comme la maquette de référence. */
+.home-screen { --home-ink: #131714; --home-muted: #555956; color: var(--home-ink); }
+.home-screen .brand { color: #153c25; }
+.home-screen h1,
+.home-screen h2,
+.home-screen .mood-btn .label { color: var(--home-ink); }
+.home-screen .text-muted { color: var(--home-muted); }
 
 .resume-card {
   position: relative; display: flex; align-items: center; gap: 14px; padding: 12px; border-radius: 28px;
@@ -181,8 +192,92 @@
   border-radius: 999px; background: var(--color-accent-2-700);
 }
 
-.auth-screen { padding: 48px 24px; display: flex; flex-direction: column; gap: 20px; min-height: 100vh; justify-content: center; }
-.auth-error { color: var(--color-accent-700); font-size: 13.5px; background: var(--color-accent-100); padding: 10px 14px; border-radius: 14px; }
+/* — Accueil, connexion, inscription : photo plein cadre —
+   Fixé sur tout l'écran pour s'affranchir de la colonne de l'app. Mobile :
+   marque en haut, actions en bas. Desktop : marque à gauche, panneau à droite. */
+.auth-hero {
+  position: fixed; inset: 0; z-index: 30; overflow: hidden; color: #fff; background: #2a2622;
+}
+/* Mobile : la personne occupe la moitié basse, un peu à gauche du centre. */
+.auth-hero-bg {
+  position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: 35% 50%;
+}
+/* Assombrit le haut (lisibilité du logo) et le bas (actions), laisse le milieu à la photo. */
+.auth-hero-shade {
+  position: absolute; inset: 0;
+  background: linear-gradient(180deg, rgba(20, 17, 15, .38) 0%, rgba(20, 17, 15, .08) 34%,
+    rgba(20, 17, 15, 0) 55%, rgba(20, 17, 15, .5) 100%);
+}
+.auth-hero-content {
+  position: relative; height: 100%; overflow-y: auto; display: flex; flex-direction: column;
+  justify-content: space-between; gap: 32px;
+  padding: calc(max(64px, 12vh) + env(safe-area-inset-top, 0px)) 24px calc(30px + env(safe-area-inset-bottom, 0px));
+}
+.auth-hero-brand { text-align: center; text-shadow: 0 1px 12px rgba(0, 0, 0, .18); }
+.auth-hero-logo {
+  font-family: "Cormorant Garamond", Georgia, serif; font-weight: 300; font-size: 76px;
+  line-height: 1; letter-spacing: -0.01em; margin: 0; color: #fff;
+}
+.auth-hero-tagline {
+  margin: 18px 0 0; font-size: 11.5px; font-weight: 500; line-height: 1.75;
+  letter-spacing: .3em; text-transform: uppercase;
+}
+.auth-hero-panel { display: flex; flex-direction: column; gap: 22px; width: 100%; max-width: 420px; margin: 0 auto; }
+
+.auth-hero-cta {
+  display: flex; align-items: center; justify-content: center; width: 100%; height: 54px;
+  border: 0; border-radius: 999px; background: #f1e7dc; color: #2a2420;
+  font: 600 16px/1 var(--font-body); text-decoration: none; cursor: pointer;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, .16); transition: background .15s ease, transform .15s ease;
+}
+.auth-hero-cta:hover { background: #fbf4ec; }
+.auth-hero-cta:active { transform: scale(.985); }
+.auth-hero-cta:disabled { opacity: .7; cursor: default; }
+
+.auth-hero-switch { margin: 0; text-align: center; font-size: 14.5px; color: rgba(255, 255, 255, .92); }
+.auth-hero-switch a,
+.auth-hero-switch button {
+  border: 0; background: none; padding: 0; font: inherit; font-weight: 700; color: #fff;
+  text-decoration: none; cursor: pointer;
+}
+.auth-hero-switch a:hover,
+.auth-hero-switch button:hover { text-decoration: underline; }
+
+.auth-hero-form { display: flex; flex-direction: column; gap: 12px; }
+.auth-hero-input {
+  width: 100%; height: 52px; padding: 0 22px; border-radius: 999px; font-size: 15px; color: #fff;
+  background: rgba(255, 255, 255, .16); border: 1px solid rgba(255, 255, 255, .38);
+  -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px);
+}
+.auth-hero-input::placeholder { color: rgba(255, 255, 255, .78); }
+.auth-hero-input:focus-visible { outline: 2px solid #fff; outline-offset: 1px; }
+.auth-hero-form .auth-hero-cta { margin-top: 6px; }
+.auth-hero-error {
+  font-size: 13.5px; padding: 11px 16px; border-radius: 18px; color: #fff;
+  background: rgba(150, 45, 30, .72); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
+}
+
+/* Desktop : photo paysage, la personne à gauche. La marque se pose sur le ciel
+   en haut au centre, le panneau à droite au-dessus de la mer. */
+@media (min-width: 1024px) {
+  .auth-hero-bg { object-position: 50% 40%; }
+  .auth-hero-shade {
+    background:
+      linear-gradient(180deg, rgba(20, 17, 15, .3) 0%, rgba(20, 17, 15, 0) 32%),
+      linear-gradient(90deg, rgba(20, 17, 15, 0) 45%, rgba(20, 17, 15, .32) 100%);
+  }
+  .auth-hero-content {
+    justify-content: space-between; gap: 40px;
+    padding: 7vh clamp(48px, 7vw, 120px) 8vh;
+  }
+  .auth-hero-logo { font-size: clamp(84px, 7.5vw, 116px); }
+  .auth-hero-tagline { font-size: 13px; margin-top: 20px; }
+  .auth-hero-panel {
+    align-self: flex-end; margin: 0; max-width: 420px; padding: 36px 32px; border-radius: 32px;
+    background: rgba(32, 27, 24, .28); border: 1px solid rgba(255, 255, 255, .22);
+    -webkit-backdrop-filter: blur(20px); backdrop-filter: blur(20px);
+  }
+}
 
 .admin-tabbar { display: flex; gap: 8px; overflow-x: auto; padding: 0 20px 2px; scrollbar-width: none; }
 .admin-pill {

@@ -27,10 +27,15 @@ export default function Profil() {
   const sub = user.subscription
   const hasAccess = user.hasAccess
 
+  const renewal = sub.currentPeriodEnd ? ` — prochaine échéance le ${formatDate(sub.currentPeriodEnd)}` : ''
   const subLine = hasAccess
-    ? sub.plan === 'ANNUAL'
-      ? `Annuel · 99 € — prochaine échéance le ${formatDate(sub.currentPeriodEnd)}`
-      : `Mensuel · 12 € — prochaine échéance le ${formatDate(sub.currentPeriodEnd)}`
+    ? sub.status === 'TRIALING'
+      ? `Essai gratuit${sub.trialEnd ? ` jusqu'au ${formatDate(sub.trialEnd)}` : ''}`
+      : sub.plan === 'ANNUAL'
+      ? `Annuel · 99 €${renewal}`
+      : sub.plan === 'MONTHLY'
+      ? `Mensuel · 12 €${renewal}`
+      : `Abonnement actif${renewal}`
     : 'Aucun abonnement. Les cours premium restent verrouillés.'
 
   const rows = [

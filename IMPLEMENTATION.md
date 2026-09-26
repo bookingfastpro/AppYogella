@@ -3,9 +3,10 @@
 A production build-out of the `Yogella.dc.html` Claude Design prototype (see
 `README.md`, `chats/`, `project/` for the original design handoff).
 
-- `server/` — Express + TypeScript + Prisma/PostgreSQL API: auth, catalog,
-  favorites/progress, Stripe subscription billing, and an admin API
-  (courses, programs, users, plans, video upload).
+- `server/` — Express + TypeScript + Prisma API on an existing Supabase
+  project: Supabase Auth sessions, catalog, favorites/progress, Stripe
+  subscription billing, and an admin API (courses, programs, users, plans,
+  video upload).
 - `web/` — React + TypeScript + Vite mobile-first web app implementing all
   12 screens from the prototype (Accueil, Explorer, Catégorie, Programme,
   Recherche, Lecteur, Article, Ma pratique, Experts, Favoris, Profil,
@@ -17,30 +18,45 @@ A production build-out of the `Yogella.dc.html` Claude Design prototype (see
 Voir **[DEPLOY.md](DEPLOY.md)** pour le détail (Coolify, Supabase, variables
 d'environnement, volume des uploads).
 
-Le plus court chemin en local — Postgres + application, dans la même image que
-la production :
+Renseigner d'abord `server/.env` (voir `server/.env.example`), puis :
 
 ```bash
-docker compose up --build     # http://localhost:3000
+docker compose up --build     # image de production, http://localhost:3000
 ```
 
 En mode développement séparé (rechargement à chaud du front) :
 
 ```bash
-cd server && cp .env.example .env && npm install
-npx prisma migrate dev && npm run seed && npm run dev   # :4000
-
-cd web && npm install && npm run dev                    # :5173
+cd server && npm install && npm run migrate && npm run dev   # :4000
+cd web && npm install && npm run dev                          # :5173
 ```
 
-Compte admin de démonstration : `estelle@yogella.fr` / `password123`.
+Pour donner les droits d'administration à un compte déjà inscrit :
+
+```bash
+cd server && npm run create-admin -- --email=x@y.fr
+```
 
 ## Base de données — Supabase
 
-Le schéma est piloté par Prisma (`server/prisma/schema.prisma`). La datasource
-expose deux URLs : `DATABASE_URL` (pooler pgBouncer, port 6543 chez Supabase)
-pour le runtime et `DIRECT_URL` (port 5432) pour `prisma migrate`. En local les
-deux pointent sur la même base.
+L'application tourne sur un schéma Supabase **préexistant** (tables `profiles`,
+`categories`, `videos`, `programs`, `program_videos`, `favorites`,
+`watch_history`, `subscriptions`). `server/prisma/schema.prisma` mappe les
+modèles Yogella sur ces tables (`Universe` → `categories`, `Course` → `videos`,
+`WatchProgress` → `watch_history`, …).
+
+- **Comptes** : Supabase Auth (`auth.users`). Le serveur relaie connexion et
+  inscription, garde les jetons dans des cookies httpOnly et vérifie les jetons
+  d'accès localement via le JWKS (ES256). `profiles.is_admin` / `active` portent
+  les droits.
+- **Migrations** : SQL écrit à la main dans `server/prisma/migrations/`,
+  appliqué par `prisma migrate deploy`. `…_baseline_supabase` décrit le schéma
+  d'origine (marquée appliquée) ; les suivantes ne font que des ajouts.
+  `prisma migrate dev` n'est pas utilisable (le schéma `auth` manque à la base
+  fantôme).
+- **Pas de seed** : le contenu se gère depuis l'admin.
+- `DATABASE_URL` : pooler de transactions (6543, `?pgbouncer=true`) ;
+  `DIRECT_URL` : pooler de sessions (5432), pour les migrations.
 
 ## Stripe billing
 

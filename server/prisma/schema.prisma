@@ -1,164 +1,193 @@
+// Yogella lit le schéma Supabase existant : chaque modèle est mappé sur une
+// table déjà en place (@@map / @map). Les comptes vivent dans auth.users, géré
+// par Supabase Auth ; `profiles` en porte une ligne par compte.
+//
+// Le schéma évolue par migrations SQL écrites à la main dans
+// prisma/migrations/ et appliquées par `prisma migrate deploy`. N'utilisez pas
+// `prisma migrate dev` : il comparerait ce fichier à une base fantôme sans le
+// schéma auth de Supabase.
+
 generator client {
   provider = "prisma-client-js"
-  // "native" for local dev (macOS/Linux), the debian target for the Docker image
-  // built on node:22-bookworm-slim (Coolify).
+  // "native" for local dev, the debian target for the Docker image built on
+  // node:22-bookworm-slim (Coolify).
   binaryTargets = ["native", "debian-openssl-3.0.x"]
 }
 
 datasource db {
   provider = "postgresql"
-  // Runtime connection. On Supabase this is the pooled (pgBouncer) URL on port
-  // 6543 with ?pgbouncer=true&connection_limit=1.
+  // Runtime : pooler de transactions Supabase (port 6543, ?pgbouncer=true).
   url       = env("DATABASE_URL")
-  // Migrations and introspection need a direct, unpooled session — Supabase port
-  // 5432. Falls back to DATABASE_URL locally where both are the same.
+  // Migrations : pooler de sessions (port 5432).
   directUrl = env("DIRECT_URL")
 }
 
-enum PlanKey {
-  MONTHLY
-  ANNUAL
-}
-
-enum SubStatus {
-  NONE
-  TRIALING
-  ACTIVE
-  CANCELED
-}
-
-enum CourseKind {
-  COURSE
-  ARTICLE
-}
-
-model User {
-  id           String    @id @default(cuid())
-  name         String
-  email        String    @unique
-  passwordHash String
-  isAdmin      Boolean   @default(false)
-  active       Boolean   @default(true)
-  createdAt    DateTime  @default(now())
+/// Une ligne par compte auth.users, créée par le trigger handle_new_user().
+model Profile {
+  id        String   @id @db.Uuid
+  email     String
+  fullName  String?  @map("full_name")
+  avatarUrl String?  @map("avatar_url")
+  isAdmin   Boolean  @default(false) @map("is_admin")
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @default(now()) @map("updated_at") @db.Timestamptz(6)
 
   subscription Subscription?
   favorites    Favorite[]
   progress     WatchProgress[]
+
+  @@map("profiles")
 }
 
+/// Statut au format Stripe : active, trialing, canceled, incomplete, past_due…
 model Subscription {
-  id                   String     @id @default(cuid())
-  userId               String     @unique
-  user                 User       @relation(fields: [userId], references: [id], onDelete: Cascade)
-  plan                 PlanKey?
-  status               SubStatus  @default(NONE)
-  stripeCustomerId     String?
-  stripeSubscriptionId String?
-  currentPeriodEnd     DateTime?
-  trialEnd             DateTime?
-  updatedAt            DateTime   @updatedAt
+  id                   String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId               String    @unique @map("user_id") @db.Uuid
+  stripeCustomerId     String    @unique @map("stripe_customer_id")
+  stripeSubscriptionId String?   @unique @map("stripe_subscription_id")
+  status               String    @default("incomplete")
+  priceId              String?   @map("price_id")
+  plan                 String?
+  currentPeriodStart   DateTime? @map("current_period_start") @db.Timestamptz(6)
+  currentPeriodEnd     DateTime? @map("current_period_end") @db.Timestamptz(6)
+  trialEnd             DateTime? @map("trial_end") @db.Timestamptz(6)
+  cancelAtPeriodEnd    Boolean   @default(false) @map("cancel_at_period_end")
+  isManual             Boolean   @default(false) @map("is_manual")
+  createdAt            DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt            DateTime  @default(now()) @map("updated_at") @db.Timestamptz(6)
+
+  user Profile @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("subscriptions")
 }
 
 model Universe {
-  id    String @id @default(cuid())
-  slug  String @unique
-  label String
-  bg    String
-  fg    String
-  dest  String
-  order Int    @default(0)
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  label       String   @unique @map("name")
+  slug        String   @unique
+  description String?
+  imagePath   String?  @map("image_path")
+  order       Int      @default(0) @map("sort_order")
+  bg          String   @default("var(--color-neutral-200)")
+  fg          String   @default("var(--color-neutral-900)")
+  dest        String   @default("categorie")
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  courses Course[]
+
+  @@map("categories")
 }
 
+/// Un cours : vidéo YouTube, vidéo hébergée (videoUrl) ou article (kind).
 model Course {
-  id           String     @id @default(cuid())
-  title        String
-  kind         CourseKind @default(COURSE)
-  universe     String
-  category     String?
-  durationMin  Int
-  premium      Boolean    @default(false)
-  // Un cours a soit une vidéo hébergée (videoUrl), soit une vidéo YouTube
-  // (youtubeId, l'identifiant à 11 caractères), jamais les deux.
-  videoUrl     String?
-  youtubeId    String?
-  // Vignette choisie explicitement. Si elle est vide et que youtubeId existe,
-  // l'API retombe sur la miniature YouTube.
-  thumbnailUrl String?
-  authorName   String?
-  authorRole   String?
-  body         String?
-  createdAt    DateTime   @default(now())
+  id              String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  slug            String    @unique
+  title           String
+  kind            String    @default("COURSE")
+  universeId      String    @map("category_id") @db.Uuid
+  category        String?   @map("subcategory")
+  durationSeconds Int       @map("duration_seconds")
+  level           String?
+  premium         Boolean   @default(false) @map("is_premium")
+  youtubeId       String?   @map("youtube_id")
+  videoUrl        String?   @map("video_url")
+  thumbnailUrl    String?   @map("thumbnail_url")
+  authorName      String    @map("instructor")
+  authorRole      String?   @map("instructor_role")
+  body            String    @map("description")
+  publishedAt     DateTime? @map("published_at") @db.Timestamptz(6)
+  createdAt       DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt       DateTime  @default(now()) @map("updated_at") @db.Timestamptz(6)
 
+  universe     Universe        @relation(fields: [universeId], references: [id], onDelete: Restrict)
   programLinks ProgramCourse[]
   favorites    Favorite[]
   progress     WatchProgress[]
+
+  @@map("videos")
 }
 
 model Program {
-  id          String   @id @default(cuid())
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  slug        String   @unique
   title       String
+  subtitle    String?
   description String?
-  coverUrl    String?
-  isRoutine   Boolean  @default(false)
-  createdAt   DateTime @default(now())
+  coverUrl    String?  @map("image_path")
+  level       String?
+  sortOrder   Int      @default(0) @map("sort_order")
+  published   Boolean  @default(true)
+  isRoutine   Boolean  @default(false) @map("is_routine")
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
 
   courses ProgramCourse[]
+
+  @@map("programs")
 }
 
 model ProgramCourse {
-  id        String  @id @default(cuid())
-  programId String
-  courseId  String
-  order     Int     @default(0)
+  programId String @map("program_id") @db.Uuid
+  courseId  String @map("video_id") @db.Uuid
+  order     Int    @default(0) @map("position")
 
   program Program @relation(fields: [programId], references: [id], onDelete: Cascade)
   course  Course  @relation(fields: [courseId], references: [id], onDelete: Cascade)
 
-  @@unique([programId, courseId])
-}
-
-model Expert {
-  id   String @id @default(cuid())
-  name String
-  role String
+  @@id([programId, courseId])
+  @@map("program_videos")
 }
 
 model Favorite {
-  id        String   @id @default(cuid())
-  userId    String
-  courseId  String
-  createdAt DateTime @default(now())
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  courseId  String   @map("video_id") @db.Uuid
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
 
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-  course Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  user   Profile @relation(fields: [userId], references: [id], onDelete: Cascade)
+  course Course  @relation(fields: [courseId], references: [id], onDelete: Cascade)
 
   @@unique([userId, courseId])
+  @@map("favorites")
 }
 
 model WatchProgress {
-  id          String   @id @default(cuid())
-  userId      String
-  courseId    String
-  progressPct Float    @default(0)
-  completed   Boolean  @default(false)
-  updatedAt   DateTime @updatedAt
+  userId          String   @map("user_id") @db.Uuid
+  courseId        String   @map("video_id") @db.Uuid
+  progressSeconds Int      @default(0) @map("progress_seconds")
+  completed       Boolean  @default(false)
+  updatedAt       DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
 
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-  course Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  user   Profile @relation(fields: [userId], references: [id], onDelete: Cascade)
+  course Course  @relation(fields: [courseId], references: [id], onDelete: Cascade)
 
-  @@unique([userId, courseId])
+  @@id([userId, courseId])
+  @@map("watch_history")
+}
+
+model Expert {
+  id        String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name      String
+  role      String
+  sortOrder Int    @default(0) @map("sort_order")
+
+  @@map("experts")
 }
 
 model Plan {
-  id            String  @id @default(cuid())
-  key           PlanKey @unique
+  key           String  @id
   label         String
-  priceCents    Int
+  priceCents    Int     @map("price_cents")
   active        Boolean @default(true)
-  stripePriceId String?
+  stripePriceId String? @map("stripe_price_id")
+
+  @@map("plans")
 }
 
 model Settings {
   id        String @id @default("singleton")
-  trialDays Int    @default(0)
+  trialDays Int    @default(0) @map("trial_days")
+
+  @@map("app_settings")
 }

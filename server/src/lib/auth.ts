@@ -1,32 +1,29 @@
-import jwt from "jsonwebtoken";
+import type { CookieOptions, Response } from "express";
+import type { AuthSession } from "./supabase.js";
 
-const JWT_SECRET = process.env.JWT_SECRET || "dev-secret-change-me";
-const COOKIE_NAME = "yogella_session";
 const MAX_AGE_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
 
-export interface SessionPayload {
-  userId: string;
-}
-
-export function signSession(payload: SessionPayload): string {
-  return jwt.sign(payload, JWT_SECRET, { expiresIn: "30d" });
-}
-
-export function verifySession(token: string): SessionPayload | null {
-  try {
-    return jwt.verify(token, JWT_SECRET) as SessionPayload;
-  } catch {
-    return null;
-  }
-}
-
-export const sessionCookie = {
-  name: COOKIE_NAME,
-  options: {
-    httpOnly: true,
-    sameSite: "lax" as const,
-    secure: process.env.NODE_ENV === "production",
-    maxAge: MAX_AGE_MS,
-    path: "/",
-  },
+// Le jeton d'accès Supabase expire au bout d'une heure ; le cookie vit plus
+// longtemps pour que le middleware puisse le renouveler avec le refresh token.
+export const sessionCookies = {
+  access: "yogella_at",
+  refresh: "yogella_rt",
 };
+
+const options: CookieOptions = {
+  httpOnly: true,
+  sameSite: "lax",
+  secure: process.env.NODE_ENV === "production",
+  maxAge: MAX_AGE_MS,
+  path: "/",
+};
+
+export function setSessionCookies(res: Response, session: AuthSession) {
+  res.cookie(sessionCookies.access, session.access_token, options);
+  res.cookie(sessionCookies.refresh, session.refresh_token, options);
+}
+
+export function clearSessionCookies(res: Response) {
+  res.clearCookie(sessionCookies.access, { path: "/" });
+  res.clearCookie(sessionCookies.refresh, { path: "/" });
+}

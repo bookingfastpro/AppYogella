@@ -4,6 +4,11 @@ import { prisma } from "../lib/prisma.js";
 import { requireAdmin } from "../middleware/auth.js";
 import { uploadVideo, uploadImage } from "../lib/upload.js";
 import { parseYoutubeId, youtubeThumbnail } from "../lib/youtube.js";
+import { durationMin } from "../lib/courseSerialize.js";
+import { uniqueSlug } from "../lib/slug.js";
+import { AuthApiError, adminUpdateUserEmail } from "../lib/supabase.js";
+import { displayName } from "../middleware/auth.js";
+import { manualCustomerId } from "./subscription.js";
 
 export const adminRouter = Router();
 
@@ -12,16 +17,16 @@ adminRouter.use(requireAdmin);
 // ───────────────────────── Courses ─────────────────────────
 
 adminRouter.get("/courses", async (_req, res) => {
-  const courses = await prisma.course.findMany({ orderBy: { createdAt: "desc" } });
+  const courses = await prisma.course.findMany({ include: { universe: true }, orderBy: { createdAt: "desc" } });
   res.json({
     courses: courses.map((c) => ({
       id: c.id,
       title: c.title,
       kind: c.kind,
-      universe: c.universe,
+      universe: c.universe.label,
       category: c.category,
-      durationMin: c.durationMin,
-      meta: `${c.universe} · ${c.durationMin} min`,
+      durationMin: durationMin(c),
+      meta: `${c.universe.label} · ${durationMin(c)} min${c.publishedAt ? "" : " · brouillon"}`,
       premium: c.premium,
       videoUrl: c.videoUrl,
       youtubeId: c.youtubeId,
@@ -70,12 +75,45 @@ const courseSchema = z.object({
   authorRole: z.string().optional(),
 });
 
+/** Champs du formulaire → colonnes de la table videos. */
+async function courseData(input: Partial<z.infer<typeof courseSchema>>) {
+  const { universe, durationMin: minutes, ...rest } = input;
+  let universeId: string | undefined;
+  if (universe !== undefined) {
+    const found = await prisma.universe.findUnique({ where: { label: universe } });
+    if (!found) return { error: "Univers inconnu" } as const;
+    universeId = found.id;
+  }
+  return {
+    data: {
+      ...rest,
+      ...(universeId ? { universeId } : {}),
+      ...(minutes !== undefined ? { durationSeconds: minutes * 60 } : {}),
+    },
+  } as const;
+}
+
 adminRouter.post("/courses", async (req, res) => {
   const parsed = courseSchema.safeParse(req.body);
   if (!parsed.success) {
     return res.status(400).json({ error: parsed.error.issues[0]?.message ?? "Champs invalides" });
   }
-  const course = await prisma.course.create({ data: parsed.data });
+  const mapped = await courseData(parsed.data);
+  if ("error" in mapped) return res.status(400).json({ error: mapped.error });
+  const { universeId, durationSeconds, ...fields } = mapped.data;
+  const slug = await uniqueSlug(parsed.data.title, async (s) => !!(await prisma.course.findUnique({ where: { slug: s } })));
+  const course = await prisma.course.create({
+    data: {
+      ...fields,
+      title: parsed.data.title,
+      universeId: universeId!,
+      durationSeconds: durationSeconds!,
+      slug,
+      authorName: fields.authorName ?? "",
+      body: fields.body ?? "",
+      publishedAt: new Date(),
+    },
+  });
   res.status(201).json({ course });
 });
 
@@ -86,8 +124,10 @@ adminRouter.patch("/courses/:id", async (req, res) => {
   if (!parsed.success) {
     return res.status(400).json({ error: parsed.error.issues[0]?.message ?? "Champs invalides" });
   }
+  const mapped = await courseData(parsed.data);
+  if ("error" in mapped) return res.status(400).json({ error: mapped.error });
   const course = await prisma.course
-    .update({ where: { id: req.params.id }, data: parsed.data })
+    .update({ where: { id: req.params.id }, data: mapped.data })
     .catch(() => null);
   if (!course) return res.status(404).json({ error: "Cours introuvable" });
   res.json({ course });
@@ -118,8 +158,8 @@ adminRouter.post("/uploads/image", (req, res) => {
 
 adminRouter.get("/programs", async (_req, res) => {
   const programs = await prisma.program.findMany({
-    include: { courses: { include: { course: true }, orderBy: { order: "asc" } } },
-    orderBy: { createdAt: "desc" },
+    include: { courses: { orderBy: { order: "asc" } } },
+    orderBy: [{ sortOrder: "asc" }, { createdAt: "desc" }],
   });
   res.json({
     programs: programs.map((p) => ({
@@ -149,7 +189,8 @@ const programSchema = z.object({
 adminRouter.post("/programs", async (req, res) => {
   const parsed = programSchema.safeParse(req.body);
   if (!parsed.success) return res.status(400).json({ error: "Champs invalides" });
-  const program = await prisma.program.create({ data: parsed.data });
+  const slug = await uniqueSlug(parsed.data.title, async (s) => !!(await prisma.program.findUnique({ where: { slug: s } })));
+  const program = await prisma.program.create({ data: { ...parsed.data, slug } });
   res.status(201).json({ program });
 });
 
@@ -188,33 +229,40 @@ adminRouter.delete("/programs/:id/videos/:courseId", async (req, res) => {
 // ───────────────────────── Users ─────────────────────────
 
 const PLAN_ORDER = ["Aucun", "Essai", "Mensuel", "Annuel"] as const;
-type PlanLabel = (typeof PLAN_ORDER)[number];
+/** « Actif » : abonnement actif saisi sans formule (import de l'ancienne app). */
+type PlanLabel = (typeof PLAN_ORDER)[number] | "Actif";
 
-function planLabelFor(status: string, plan: string | null): PlanLabel {
-  if (status === "TRIALING") return "Essai";
-  if (status === "ACTIVE" && plan === "MONTHLY") return "Mensuel";
-  if (status === "ACTIVE" && plan === "ANNUAL") return "Annuel";
+function planLabelFor(status: string | undefined, plan: string | null | undefined): PlanLabel {
+  if (status === "trialing") return "Essai";
+  if (status === "active" && plan === "MONTHLY") return "Mensuel";
+  if (status === "active" && plan === "ANNUAL") return "Annuel";
+  if (status === "active") return "Actif";
   return "Aucun";
 }
 
 adminRouter.get("/users", async (_req, res) => {
-  const users = await prisma.user.findMany({
+  const profiles = await prisma.profile.findMany({
     include: { subscription: true },
     orderBy: { createdAt: "desc" },
   });
   res.json({
-    users: users.map((u) => ({
-      id: u.id,
-      name: u.name,
-      email: u.email,
-      initial: u.name.slice(0, 1).toUpperCase(),
-      isAdmin: u.isAdmin,
-      active: u.active,
-      plan: planLabelFor(u.subscription?.status ?? "NONE", u.subscription?.plan ?? null),
-    })),
+    users: profiles.map((p) => {
+      const name = displayName(p);
+      return {
+        id: p.id,
+        name,
+        email: p.email,
+        initial: name.slice(0, 1).toUpperCase(),
+        isAdmin: p.isAdmin,
+        active: p.active,
+        plan: planLabelFor(p.subscription?.status, p.subscription?.plan),
+      };
+    }),
     stats: {
-      total: users.length,
-      activeSubscriptions: users.filter((u) => u.active && u.subscription?.status !== "NONE" && u.subscription?.status).length,
+      total: profiles.length,
+      activeSubscriptions: profiles.filter(
+        (p) => p.active && (p.subscription?.status === "active" || p.subscription?.status === "trialing"),
+      ).length,
     },
   });
 });
@@ -230,60 +278,71 @@ const userUpdateSchema = z.object({
 adminRouter.patch("/users/:id", async (req, res) => {
   const parsed = userUpdateSchema.safeParse(req.body);
   if (!parsed.success) return res.status(400).json({ error: "Champs invalides" });
-  const user = await prisma.user.findUnique({ where: { id: req.params.id }, include: { subscription: true } });
-  if (!user) return res.status(404).json({ error: "Utilisateur introuvable" });
+  const profile = await prisma.profile.findUnique({ where: { id: req.params.id }, include: { subscription: true } });
+  if (!profile) return res.status(404).json({ error: "Utilisateur introuvable" });
 
   // Une administratrice ne peut pas se retirer ses propres droits ni se
   // désactiver : ce serait un aller sans retour depuis l'interface.
-  const isSelf = req.user?.id === user.id;
+  const isSelf = req.user?.id === profile.id;
   if (isSelf && (parsed.data.isAdmin === false || parsed.data.active === false)) {
     return res.status(400).json({ error: "Vous ne pouvez pas retirer vos propres accès" });
   }
 
   const { name, email, isAdmin, active } = parsed.data;
-  if (name !== undefined || email !== undefined || isAdmin !== undefined || active !== undefined) {
+
+  // L'e-mail de connexion appartient à Supabase Auth : on le change là-bas
+  // d'abord, puis on reporte la valeur sur le profil.
+  if (email !== undefined && email !== profile.email) {
     try {
-      await prisma.user.update({
-        where: { id: user.id },
-        data: {
-          ...(name !== undefined ? { name } : {}),
-          ...(email !== undefined ? { email } : {}),
-          ...(isAdmin !== undefined ? { isAdmin } : {}),
-          ...(active !== undefined ? { active } : {}),
-        },
-      });
-    } catch {
-      // Contrainte d'unicité sur l'email.
-      return res.status(409).json({ error: "Cette adresse email est déjà utilisée" });
+      await adminUpdateUserEmail(profile.id, email);
+    } catch (err) {
+      if (err instanceof AuthApiError && (err.code === "email_exists" || err.status === 422)) {
+        return res.status(409).json({ error: "Cette adresse email est déjà utilisée" });
+      }
+      throw err;
     }
   }
 
-  if (parsed.data.cyclePlan) {
-    const current = planLabelFor(user.subscription?.status ?? "NONE", user.subscription?.plan ?? null);
-    const next = PLAN_ORDER[(PLAN_ORDER.indexOf(current) + 1) % PLAN_ORDER.length];
-    const data =
-      next === "Aucun"
-        ? { status: "NONE" as const, plan: null }
-        : next === "Essai"
-        ? { status: "TRIALING" as const, plan: null }
-        : next === "Mensuel"
-        ? { status: "ACTIVE" as const, plan: "MONTHLY" as const }
-        : { status: "ACTIVE" as const, plan: "ANNUAL" as const };
-    await prisma.subscription.upsert({
-      where: { userId: user.id },
-      create: { userId: user.id, ...data },
-      update: data,
+  if (name !== undefined || email !== undefined || isAdmin !== undefined || active !== undefined) {
+    await prisma.profile.update({
+      where: { id: profile.id },
+      data: {
+        ...(name !== undefined ? { fullName: name } : {}),
+        ...(email !== undefined ? { email } : {}),
+        ...(isAdmin !== undefined ? { isAdmin } : {}),
+        ...(active !== undefined ? { active } : {}),
+      },
     });
   }
 
-  const updated = await prisma.user.findUnique({ where: { id: user.id }, include: { subscription: true } });
+  if (parsed.data.cyclePlan) {
+    const current = planLabelFor(profile.subscription?.status, profile.subscription?.plan);
+    // Un abonnement « Actif » sans formule passe à Mensuel plutôt que de perdre l'accès.
+    const from = current === "Actif" ? PLAN_ORDER.indexOf("Essai") : PLAN_ORDER.indexOf(current);
+    const next = PLAN_ORDER[(from + 1) % PLAN_ORDER.length];
+    const data =
+      next === "Aucun"
+        ? { status: "canceled", plan: null }
+        : next === "Essai"
+        ? { status: "trialing", plan: null }
+        : next === "Mensuel"
+        ? { status: "active", plan: "MONTHLY" }
+        : { status: "active", plan: "ANNUAL" };
+    await prisma.subscription.upsert({
+      where: { userId: profile.id },
+      create: { userId: profile.id, stripeCustomerId: manualCustomerId(profile.id), isManual: true, ...data },
+      update: { ...data, isManual: true },
+    });
+  }
+
+  const updated = await prisma.profile.findUniqueOrThrow({ where: { id: profile.id }, include: { subscription: true } });
   res.json({
     user: {
-      id: updated!.id,
-      name: updated!.name,
-      email: updated!.email,
-      active: updated!.active,
-      plan: planLabelFor(updated!.subscription?.status ?? "NONE", updated!.subscription?.plan ?? null),
+      id: updated.id,
+      name: displayName(updated),
+      email: updated.email,
+      active: updated.active,
+      plan: planLabelFor(updated.subscription?.status, updated.subscription?.plan),
     },
   });
 });
@@ -294,7 +353,7 @@ adminRouter.get("/plans", async (_req, res) => {
   const plans = await prisma.plan.findMany({ orderBy: { key: "asc" } });
   const counts = await prisma.subscription.groupBy({
     by: ["plan"],
-    where: { status: "ACTIVE" },
+    where: { status: "active" },
     _count: true,
   });
   const settings = await prisma.settings.findUnique({ where: { id: "singleton" } });
@@ -349,9 +408,10 @@ adminRouter.patch("/settings", async (req, res) => {
 adminRouter.get("/stats", async (_req, res) => {
   const plans = await prisma.plan.findMany();
   const counts = await prisma.subscription.groupBy({ by: ["plan", "status"], _count: true });
-  const activeMonthly = counts.find((c) => c.plan === "MONTHLY" && c.status === "ACTIVE")?._count ?? 0;
-  const activeAnnual = counts.find((c) => c.plan === "ANNUAL" && c.status === "ACTIVE")?._count ?? 0;
-  const trialCount = counts.filter((c) => c.status === "TRIALING").reduce((n, c) => n + c._count, 0);
+  const activeMonthly = counts.find((c) => c.plan === "MONTHLY" && c.status === "active")?._count ?? 0;
+  const activeAnnual = counts.find((c) => c.plan === "ANNUAL" && c.status === "active")?._count ?? 0;
+  const activeOther = counts.filter((c) => c.plan === null && c.status === "active").reduce((n, c) => n + c._count, 0);
+  const trialCount = counts.filter((c) => c.status === "trialing").reduce((n, c) => n + c._count, 0);
   const monthly = plans.find((p) => p.key === "MONTHLY");
   const annual = plans.find((p) => p.key === "ANNUAL");
   const mrr =
@@ -360,7 +420,7 @@ adminRouter.get("/stats", async (_req, res) => {
 
   res.json({
     mrr: Math.round(mrr).toLocaleString("fr-FR") + " €",
-    activeCount: activeMonthly + activeAnnual,
+    activeCount: activeMonthly + activeAnnual + activeOther,
     trialCount,
   });
 });

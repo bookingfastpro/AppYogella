@@ -13,12 +13,17 @@ function getStripe(): Stripe | null {
   return new Stripe(key, { apiVersion: "2026-08-26.dahlia" });
 }
 
+/** Les abonnements saisis à la main par l'admin n'ont pas de vrai client Stripe. */
+export function manualCustomerId(userId: string) {
+  return `manual_${userId}`;
+}
+
 subscriptionRouter.get("/subscription", requireAuth, async (req, res) => {
-  const user = await prisma.user.findUnique({
+  const profile = await prisma.profile.findUnique({
     where: { id: req.user!.id },
     include: { subscription: true },
   });
-  res.json({ subscription: serializeMe(user!).subscription });
+  res.json({ subscription: serializeMe(profile!).subscription });
 });
 
 const checkoutSchema = z.object({ plan: z.enum(["MONTHLY", "ANNUAL"]) });
@@ -37,19 +42,24 @@ subscriptionRouter.post("/subscription/checkout", requireAuth, async (req, res) 
   const plan = await prisma.plan.findUnique({ where: { key: parsed.data.plan } });
   if (!plan || !plan.active) return res.status(400).json({ error: "Formule indisponible" });
 
-  const user = await prisma.user.findUnique({
+  const profile = await prisma.profile.findUnique({
     where: { id: req.user!.id },
     include: { subscription: true },
   });
-  if (!user) return res.status(401).json({ error: "Authentification requise" });
+  if (!profile) return res.status(401).json({ error: "Authentification requise" });
 
-  let customerId = user.subscription?.stripeCustomerId ?? undefined;
-  if (!customerId) {
-    const customer = await stripe.customers.create({ email: user.email, name: user.name });
+  let customerId = profile.subscription?.stripeCustomerId;
+  if (!customerId || customerId.startsWith("manual_")) {
+    const customer = await stripe.customers.create({
+      email: profile.email,
+      name: profile.fullName ?? undefined,
+      metadata: { userId: profile.id },
+    });
     customerId = customer.id;
-    await prisma.subscription.update({
-      where: { userId: user.id },
-      data: { stripeCustomerId: customerId },
+    await prisma.subscription.upsert({
+      where: { userId: profile.id },
+      create: { userId: profile.id, stripeCustomerId: customerId },
+      update: { stripeCustomerId: customerId },
     });
   }
 
@@ -68,19 +78,27 @@ subscriptionRouter.post("/subscription/checkout", requireAuth, async (req, res) 
         quantity: 1,
       };
 
-  const webOrigin = process.env.WEB_ORIGIN || "http://localhost:5173";
+  const webOrigin = publicOrigin();
+  const metadata = { userId: profile.id, plan: plan.key };
   const session = await stripe.checkout.sessions.create({
     mode: "subscription",
     customer: customerId,
     line_items: [lineItem],
-    subscription_data: trialDays > 0 ? { trial_period_days: trialDays } : undefined,
+    // Les métadonnées doivent aussi vivre sur l'abonnement : ce sont elles que
+    // lisent les événements customer.subscription.updated/deleted (résiliation).
+    subscription_data: { metadata, ...(trialDays > 0 ? { trial_period_days: trialDays } : {}) },
     success_url: `${webOrigin}/profil?checkout=success`,
     cancel_url: `${webOrigin}/abonnement?checkout=cancelled`,
-    metadata: { userId: user.id, plan: plan.key },
+    metadata,
   });
 
   res.json({ url: session.url });
 });
+
+/** Premier domaine de WEB_ORIGIN : c'est l'URL de retour après Stripe. */
+function publicOrigin() {
+  return (process.env.WEB_ORIGIN || "http://localhost:5173").split(",")[0].trim();
+}
 
 subscriptionRouter.post("/subscription/portal", requireAuth, async (req, res) => {
   const stripe = getStripe();
@@ -88,13 +106,12 @@ subscriptionRouter.post("/subscription/portal", requireAuth, async (req, res) =>
     return res.status(503).json({ error: "La facturation Stripe n'est pas configurée." });
   }
   const sub = await prisma.subscription.findUnique({ where: { userId: req.user!.id } });
-  if (!sub?.stripeCustomerId) {
+  if (!sub?.stripeCustomerId || sub.stripeCustomerId.startsWith("manual_")) {
     return res.status(400).json({ error: "Aucun compte de facturation associé" });
   }
-  const webOrigin = process.env.WEB_ORIGIN || "http://localhost:5173";
   const session = await stripe.billingPortal.sessions.create({
     customer: sub.stripeCustomerId,
-    return_url: `${webOrigin}/profil`,
+    return_url: `${publicOrigin()}/profil`,
   });
   res.json({ url: session.url });
 });
@@ -113,26 +130,42 @@ export async function stripeWebhookHandler(req: import("express").Request, res: 
     return res.status(400).send(`Webhook signature verification failed`);
   }
 
+  // Stripe peut renvoyer un même événement : stripe_events sert de journal.
+  // L'événement n'y est inscrit qu'une fois traité, pour qu'un échec soit
+  // retenté par Stripe au lieu d'être ignoré.
+  const seen = await prisma.$queryRaw<{ id: string }[]>`
+    SELECT id FROM public.stripe_events WHERE id = ${event.id}`;
+  if (seen.length) return res.json({ received: true, duplicate: true });
+
   async function upsertFromStripeSubscription(stripeSub: Stripe.Subscription) {
-    const userId = stripeSub.metadata?.userId;
-    const planKey = (stripeSub.metadata?.plan as "MONTHLY" | "ANNUAL" | undefined) ?? undefined;
+    const customerId = typeof stripeSub.customer === "string" ? stripeSub.customer : stripeSub.customer.id;
+    // Repli sur le client Stripe pour les abonnements créés avant que les
+    // métadonnées ne soient posées sur l'abonnement lui-même.
+    const userId =
+      stripeSub.metadata?.userId ??
+      (await prisma.subscription.findUnique({ where: { stripeCustomerId: customerId } }))?.userId;
     if (!userId) return;
-    const status =
-      stripeSub.status === "active" || stripeSub.status === "trialing"
-        ? stripeSub.status === "trialing"
-          ? "TRIALING"
-          : "ACTIVE"
-        : "CANCELED";
-    const periodEnd = stripeSub.items.data[0]?.current_period_end;
-    await prisma.subscription.update({
+
+    const planKey = stripeSub.metadata?.plan === "MONTHLY" || stripeSub.metadata?.plan === "ANNUAL"
+      ? stripeSub.metadata.plan
+      : undefined;
+    const item = stripeSub.items.data[0];
+    const data = {
+      stripeCustomerId: customerId,
+      stripeSubscriptionId: stripeSub.id,
+      status: stripeSub.status,
+      ...(planKey ? { plan: planKey } : {}),
+      priceId: item?.price.id ?? null,
+      currentPeriodStart: item?.current_period_start ? new Date(item.current_period_start * 1000) : null,
+      currentPeriodEnd: item?.current_period_end ? new Date(item.current_period_end * 1000) : null,
+      trialEnd: stripeSub.trial_end ? new Date(stripeSub.trial_end * 1000) : null,
+      cancelAtPeriodEnd: stripeSub.cancel_at_period_end,
+      isManual: false,
+    };
+    await prisma.subscription.upsert({
       where: { userId },
-      data: {
-        status,
-        plan: planKey,
-        stripeSubscriptionId: stripeSub.id,
-        currentPeriodEnd: periodEnd ? new Date(periodEnd * 1000) : null,
-        trialEnd: stripeSub.trial_end ? new Date(stripeSub.trial_end * 1000) : null,
-      },
+      create: { userId, ...data },
+      update: data,
     });
   }
 
@@ -141,12 +174,12 @@ export async function stripeWebhookHandler(req: import("express").Request, res: 
       const session = event.data.object as Stripe.Checkout.Session;
       if (session.subscription && typeof session.subscription === "string") {
         const stripeSub = await stripe.subscriptions.retrieve(session.subscription);
-        // metadata lives on the checkout session; propagate onto the subscription object we use.
-        stripeSub.metadata = { ...stripeSub.metadata, ...session.metadata };
+        stripeSub.metadata = { ...session.metadata, ...stripeSub.metadata };
         await upsertFromStripeSubscription(stripeSub);
       }
       break;
     }
+    case "customer.subscription.created":
     case "customer.subscription.updated":
     case "customer.subscription.deleted": {
       await upsertFromStripeSubscription(event.data.object as Stripe.Subscription);
@@ -156,5 +189,8 @@ export async function stripeWebhookHandler(req: import("express").Request, res: 
       break;
   }
 
+  await prisma.$executeRaw`
+    INSERT INTO public.stripe_events (id, type) VALUES (${event.id}, ${event.type})
+    ON CONFLICT (id) DO NOTHING`;
   res.json({ received: true });
 }

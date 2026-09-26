@@ -1,15 +1,21 @@
 import { useRef, useState } from 'react'
 import { useAdminCourses, useAddCourse, useUpdateCourse, useDeleteCourse, useUploadVideo, type AdminCourse } from '../../lib/adminHooks'
+import { useUniverses } from '../../lib/hooks'
 import { EditSheet, ImagePicker } from '../../components/AdminEdit'
 import { useToast } from '../../lib/ToastContext'
 import { ApiError } from '../../lib/api'
 import { IconUpload, IconTrash, IconPencil } from '../../components/icons'
 import { Loader } from '../../components/Loader'
 
-const UNIVERSES = ['Yoga', 'Auto-massages', 'Respiration', 'Comprendre son corps', 'Sommeil', 'Nutrition']
+/** Libellés des univers, dans l'ordre d'Explorer. */
+function useUniverseLabels() {
+  const { data } = useUniverses()
+  return (data ?? []).map((u) => u.label)
+}
 
 export default function AdminCours() {
   const { data: courses, isPending } = useAdminCourses()
+  const UNIVERSES = useUniverseLabels()
   const addCourse = useAddCourse()
   const updateCourse = useUpdateCourse()
   const deleteCourse = useDeleteCourse()
@@ -19,7 +25,9 @@ export default function AdminCours() {
 
   const [title, setTitle] = useState('')
   const [duration, setDuration] = useState('')
-  const [universe, setUniverse] = useState(UNIVERSES[0])
+  const [universeChoice, setUniverse] = useState('')
+  // Les univers arrivent de l'API : on retombe sur le premier tant que rien n'est choisi.
+  const universe = universeChoice || UNIVERSES[0] || ''
   const [premium, setPremium] = useState(true)
   const [videoUrl, setVideoUrl] = useState<string | null>(null)
   const [fileName, setFileName] = useState('')
@@ -182,6 +190,7 @@ function CourseEditSheet({
   const [youtube, setYoutube] = useState(course.youtubeId ?? '')
   const [thumb, setThumb] = useState<string | null>(course.customThumbnailUrl)
   const [premium, setPremium] = useState(course.premium)
+  const UNIVERSES = useUniverseLabels()
 
   // Miniature YouTube du lien en cours de saisie, pour l'aperçu « image par défaut ».
   const ytFallback = /^[A-Za-z0-9_-]{11}$/.test(youtube.trim())
