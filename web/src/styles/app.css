@@ -345,6 +345,98 @@
   width: 38px; height: 4px; border-radius: 999px; flex: none;
   background: var(--color-divider); margin: 2px auto 6px;
 }
+/* — notifications : cloche de l'accueil et panneau de lecture —
+   Mobile : feuille qui remonte du bas, comme les feuilles d'édition.
+   À partir de 768px : tiroir fixé à droite, sur toute la hauteur. */
+.notif-bell {
+  position: relative; width: 40px; height: 40px; border-radius: 999px; flex: none;
+  display: flex; align-items: center; justify-content: center; cursor: pointer;
+  border: 0; background: var(--color-neutral-200); color: inherit; transition: background .15s ease;
+}
+.notif-bell:hover { background: var(--color-neutral-300); }
+.notif-badge {
+  position: absolute; top: -3px; right: -3px; min-width: 19px; height: 19px; padding: 0 5px;
+  border-radius: 999px; background: var(--color-accent-600); color: #fff;
+  font-size: 10.5px; font-weight: 700; line-height: 19px; text-align: center;
+  box-shadow: 0 0 0 2px var(--color-bg);
+}
+
+.notif-backdrop {
+  position: fixed; inset: 0; z-index: 60; display: flex; align-items: flex-end; justify-content: center;
+  background: color-mix(in srgb, #2e2b25 46%, transparent);
+  animation: notif-fade .18s ease-out;
+}
+.notif-panel {
+  width: 100%; max-width: 480px; max-height: 82vh; max-height: 82dvh;
+  display: flex; flex-direction: column; overflow: hidden;
+  background: var(--color-surface); color: var(--color-text);
+  border-radius: 22px 22px 0 0; box-shadow: var(--shadow-lg);
+  padding: 10px 0 env(safe-area-inset-bottom, 0px);
+  animation: notif-up .24s cubic-bezier(.2, .8, .2, 1);
+}
+.notif-handle { margin-bottom: 2px; }
+.notif-header {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 4px 18px 12px;
+  border-bottom: 1px solid var(--color-divider);
+}
+.notif-header h2 { font-size: 19px; margin: 0; }
+
+.notif-list {
+  list-style: none; margin: 0; padding: 8px 10px 16px; overflow-y: auto; overscroll-behavior: contain;
+  display: flex; flex-direction: column; gap: 4px;
+}
+.notif-item { position: relative; padding: 13px 14px 13px 16px; border-radius: 18px; }
+.notif-item.unread { background: var(--color-neutral-100); }
+.notif-dot {
+  position: absolute; left: 6px; top: 19px; width: 6px; height: 6px; border-radius: 999px;
+  background: var(--color-accent-600);
+}
+.notif-item-head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+.notif-item-title { font-size: 14.5px; font-weight: 700; line-height: 1.3; min-width: 0; overflow-wrap: anywhere; }
+.notif-item-time { flex: none; font-size: 11.5px; color: var(--color-neutral-600); white-space: nowrap; }
+.notif-item-body {
+  margin: 4px 0 0; font-size: 13.5px; line-height: 1.5; color: var(--color-neutral-800);
+  white-space: pre-line; overflow-wrap: anywhere;
+}
+
+.notif-empty {
+  display: flex; flex-direction: column; align-items: center; gap: 6px; text-align: center;
+  padding: 36px 28px 44px; font-size: 13.5px; color: var(--color-neutral-700);
+}
+.notif-empty strong { font-size: 15px; color: var(--color-text); }
+.notif-empty-icon {
+  width: 52px; height: 52px; border-radius: 999px; display: flex; align-items: center; justify-content: center;
+  background: var(--color-neutral-100); color: var(--color-accent-600); margin-bottom: 6px;
+}
+
+/* Admin : message d'une notification envoyée, et champ de saisie multiligne. */
+.notif-admin-body {
+  font-size: 12.5px; line-height: 1.45; color: var(--color-neutral-700); margin-top: 3px;
+  white-space: pre-line; overflow-wrap: anywhere;
+  display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;
+}
+.notif-textarea { border-radius: 20px; min-height: 104px; resize: vertical; line-height: 1.5; }
+
+@keyframes notif-fade { from { opacity: 0; } }
+@keyframes notif-up { from { transform: translateY(100%); } }
+@keyframes notif-in { from { transform: translateX(100%); } }
+
+@media (min-width: 768px) {
+  .notif-backdrop { justify-content: flex-end; align-items: stretch; }
+  .notif-panel {
+    max-width: 400px; max-height: none; height: 100%;
+    border-radius: 26px 0 0 26px; padding-top: 18px;
+    animation-name: notif-in;
+  }
+  .notif-handle { display: none; }
+  .notif-header { padding-inline: 22px; }
+  .notif-list { padding-inline: 12px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .notif-backdrop, .notif-panel { animation: none; }
+}
+
 .thumb-preview {
   width: 68px; height: 68px; flex: none;
   border-radius: 14px; overflow: hidden;

@@ -33,11 +33,37 @@ model Profile {
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt DateTime @default(now()) @map("updated_at") @db.Timestamptz(6)
 
-  subscription Subscription?
-  favorites    Favorite[]
-  progress     WatchProgress[]
+  subscription      Subscription?
+  favorites         Favorite[]
+  progress          WatchProgress[]
+  notificationReads NotificationRead[]
 
   @@map("profiles")
+}
+
+/// Message envoyé par l'admin à toutes les utilisatrices (cloche de l'accueil).
+model Notification {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  title     String
+  body      String
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  reads NotificationRead[]
+
+  @@map("notifications")
+}
+
+/// Une ligne par notification lue et par compte.
+model NotificationRead {
+  notificationId String   @map("notification_id") @db.Uuid
+  userId         String   @map("user_id") @db.Uuid
+  readAt         DateTime @default(now()) @map("read_at") @db.Timestamptz(6)
+
+  notification Notification @relation(fields: [notificationId], references: [id], onDelete: Cascade)
+  user         Profile      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([notificationId, userId])
+  @@map("notification_reads")
 }
 
 /// Statut au format Stripe : active, trialing, canceled, incomplete, past_due…

@@ -35,6 +35,59 @@ userRouter.delete("/favorites/:courseId", async (req, res) => {
   res.json({ ok: true });
 });
 
+// ───────────────────────── Notifications ─────────────────────────
+
+/** Nombre de notifications renvoyées : les plus récentes suffisent à la cloche. */
+const NOTIFICATION_LIMIT = 30;
+
+userRouter.get("/notifications", async (req, res) => {
+  const userId = req.user!.id;
+  const [profile, notifications] = await Promise.all([
+    prisma.profile.findUnique({ where: { id: userId }, select: { createdAt: true } }),
+    prisma.notification.findMany({
+      orderBy: { createdAt: "desc" },
+      take: NOTIFICATION_LIMIT,
+      include: { reads: { where: { userId }, select: { readAt: true } } },
+    }),
+  ]);
+  // Une annonce antérieure à l'inscription n'est pas « nouvelle » pour ce compte.
+  const since = profile?.createdAt ?? new Date(0);
+  const items = notifications.map((n) => ({
+    id: n.id,
+    title: n.title,
+    body: n.body,
+    createdAt: n.createdAt,
+    read: n.reads.length > 0 || n.createdAt < since,
+  }));
+  res.json({ notifications: items, unreadCount: items.filter((n) => !n.read).length });
+});
+
+const readSchema = z.object({ ids: z.array(z.string().uuid()).max(100).optional() });
+
+/** Marque comme lues les notifications données, ou toutes celles non lues. */
+userRouter.post("/notifications/read", async (req, res) => {
+  const parsed = readSchema.safeParse(req.body);
+  if (!parsed.success) return res.status(400).json({ error: "Champs invalides" });
+  const userId = req.user!.id;
+  const ids =
+    parsed.data.ids ??
+    (
+      await prisma.notification.findMany({
+        where: { reads: { none: { userId } } },
+        select: { id: true },
+        orderBy: { createdAt: "desc" },
+        take: NOTIFICATION_LIMIT,
+      })
+    ).map((n) => n.id);
+  if (ids.length) {
+    await prisma.notificationRead.createMany({
+      data: ids.map((notificationId) => ({ notificationId, userId })),
+      skipDuplicates: true,
+    });
+  }
+  res.json({ ok: true });
+});
+
 const progressSchema = z.object({
   courseId: z.string(),
   progressPct: z.number().min(0).max(1),

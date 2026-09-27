@@ -3,7 +3,8 @@ import { useAuth } from '../lib/AuthContext'
 import { usePrograms, usePractice } from '../lib/hooks'
 import { useGatedOpen } from '../lib/useGatedOpen'
 import { MOODS } from '../lib/moods'
-import { IconBell, IconPlay, IconChevronRight, IconVideo, IconLock } from '../components/icons'
+import { IconPlay, IconChevronRight, IconVideo, IconLock } from '../components/icons'
+import { NotificationBell } from '../components/NotificationBell'
 import heroPhoto from '../assets/course-photo.webp'
 import { Loader } from '../components/Loader'
 
@@ -23,19 +24,7 @@ export default function Home() {
     <div className="screen home-screen">
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <div className="brand">Yogella</div>
-        <div
-          style={{
-            width: 38,
-            height: 38,
-            borderRadius: 999,
-            background: 'var(--color-neutral-200)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-          }}
-        >
-          <IconBell size={19} />
-        </div>
+        <NotificationBell />
       </div>
 
       <div>

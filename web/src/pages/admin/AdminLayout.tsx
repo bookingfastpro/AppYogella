@@ -6,6 +6,7 @@ const TABS = [
   { to: '/admin/programmes', label: 'Programmes' },
   { to: '/admin/utilisateurs', label: 'Utilisateurs' },
   { to: '/admin/abonnements', label: 'Abonnements' },
+  { to: '/admin/notifications', label: 'Notifications' },
 ]
 
 export default function AdminLayout() {

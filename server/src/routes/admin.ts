@@ -410,6 +410,48 @@ adminRouter.patch("/settings", async (req, res) => {
   res.json({ settings });
 });
 
+// ───────────────────────── Notifications ─────────────────────────
+
+adminRouter.get("/notifications", async (_req, res) => {
+  const [notifications, accounts] = await Promise.all([
+    prisma.notification.findMany({
+      orderBy: { createdAt: "desc" },
+      take: 100,
+      include: { _count: { select: { reads: true } } },
+    }),
+    prisma.profile.count({ where: { active: true } }),
+  ]);
+  res.json({
+    notifications: notifications.map((n) => ({
+      id: n.id,
+      title: n.title,
+      body: n.body,
+      createdAt: n.createdAt,
+      readCount: n._count.reads,
+    })),
+    accounts,
+  });
+});
+
+const notificationSchema = z.object({
+  title: z.string().trim().min(1, "Donnez un titre à la notification").max(80, "Titre trop long (80 caractères max.)"),
+  body: z.string().trim().min(1, "Écrivez le message").max(600, "Message trop long (600 caractères max.)"),
+});
+
+adminRouter.post("/notifications", async (req, res) => {
+  const parsed = notificationSchema.safeParse(req.body);
+  if (!parsed.success) {
+    return res.status(400).json({ error: parsed.error.issues[0]?.message ?? "Champs invalides" });
+  }
+  const notification = await prisma.notification.create({ data: parsed.data });
+  res.status(201).json({ notification });
+});
+
+adminRouter.delete("/notifications/:id", async (req, res) => {
+  await prisma.notification.delete({ where: { id: req.params.id } }).catch(() => null);
+  res.json({ ok: true });
+});
+
 // ───────────────────────── Stats ─────────────────────────
 
 adminRouter.get("/stats", async (_req, res) => {

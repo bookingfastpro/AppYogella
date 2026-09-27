@@ -21,6 +21,7 @@ import AdminCours from './pages/admin/AdminCours'
 import AdminProgrammes from './pages/admin/AdminProgrammes'
 import AdminUtilisateurs from './pages/admin/AdminUtilisateurs'
 import AdminAbonnements from './pages/admin/AdminAbonnements'
+import AdminNotifications from './pages/admin/AdminNotifications'
 
 export default function App() {
   return (
@@ -62,6 +63,7 @@ export default function App() {
                 <Route path="programmes" element={<AdminProgrammes />} />
                 <Route path="utilisateurs" element={<AdminUtilisateurs />} />
                 <Route path="abonnements" element={<AdminAbonnements />} />
+                <Route path="notifications" element={<AdminNotifications />} />
               </Route>
             </Route>
           </Route>

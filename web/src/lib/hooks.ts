@@ -1,4 +1,4 @@
-import { keepPreviousData, useQuery } from '@tanstack/react-query'
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from './api'
 import type { Course, Universe, ProgramSummary, ProgramDetail, Expert } from './api'
 
@@ -79,6 +79,49 @@ export function usePractice(enabled: boolean) {
     queryKey: ['practice'],
     queryFn: () => api.get<PracticeData>('/api/practice'),
     enabled,
+  })
+}
+
+export interface AppNotification {
+  id: string
+  title: string
+  body: string
+  createdAt: string
+  read: boolean
+}
+
+export interface NotificationsData {
+  notifications: AppNotification[]
+  unreadCount: number
+}
+
+/**
+ * Notifications de la cloche. Rafraîchies chaque minute tant que l'onglet est
+ * visible (React Query suspend l'intervalle en arrière-plan) et au retour sur
+ * l'onglet, pour qu'une annonce envoyée par l'admin apparaisse sans recharger.
+ */
+export function useNotifications(enabled: boolean) {
+  return useQuery({
+    queryKey: ['notifications'],
+    queryFn: () => api.get<NotificationsData>('/api/notifications'),
+    enabled,
+    staleTime: 30_000,
+    refetchInterval: 60_000,
+  })
+}
+
+/** Marque toutes les notifications non lues comme lues (mise à jour optimiste). */
+export function useMarkNotificationsRead() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: () => api.post('/api/notifications/read'),
+    onMutate: async () => {
+      await qc.cancelQueries({ queryKey: ['notifications'] })
+      qc.setQueryData<NotificationsData>(['notifications'], (d) =>
+        d && { unreadCount: 0, notifications: d.notifications.map((n) => ({ ...n, read: true })) },
+      )
+    },
+    onSettled: () => qc.invalidateQueries({ queryKey: ['notifications'] }),
   })
 }
 

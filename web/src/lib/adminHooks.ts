@@ -176,6 +176,43 @@ export function useUpdateSettings() {
   })
 }
 
+export interface AdminNotification {
+  id: string
+  title: string
+  body: string
+  createdAt: string
+  readCount: number
+}
+
+export function useAdminNotifications() {
+  return useQuery({
+    queryKey: ['admin', 'notifications'],
+    queryFn: () => api.get<{ notifications: AdminNotification[]; accounts: number }>('/api/admin/notifications'),
+  })
+}
+
+export function useSendNotification() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (body: { title: string; body: string }) => api.post('/api/admin/notifications', body),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['admin', 'notifications'] })
+      qc.invalidateQueries({ queryKey: ['notifications'] })
+    },
+  })
+}
+
+export function useDeleteNotification() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (id: string) => api.delete(`/api/admin/notifications/${id}`),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['admin', 'notifications'] })
+      qc.invalidateQueries({ queryKey: ['notifications'] })
+    },
+  })
+}
+
 export function useAdminStats() {
   return useQuery({
     queryKey: ['admin', 'stats'],
