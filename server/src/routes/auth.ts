@@ -71,12 +71,23 @@ authRouter.post("/login", async (req, res) => {
     throw err;
   }
 
-  const profile = await prisma.profile.upsert({
-    where: { id: session.user.id },
-    create: { id: session.user.id, email: session.user.email ?? email },
-    update: {},
-    include: { subscription: true },
-  });
+  let profile;
+  try {
+    profile = await prisma.profile.upsert({
+      where: { id: session.user.id },
+      create: { id: session.user.id, email: session.user.email ?? email },
+      update: {},
+      include: { subscription: true },
+    });
+  } catch (err) {
+    // Clé étrangère profiles → auth.users : le compte authentifié n'existe pas
+    // dans la base, donc Auth et base appartiennent à deux projets Supabase.
+    if ((err as { code?: string }).code === "P2003") {
+      console.error("Connexion : compte absent de auth.users — SUPABASE_URL et DATABASE_URL ne visent pas le même projet.");
+      return res.status(500).json({ error: "Configuration serveur incorrecte (projet Supabase). Contactez l'administratrice." });
+    }
+    throw err;
+  }
   if (!profile.active) {
     await signOut(session.access_token);
     return res.status(403).json({ error: "Ce compte a été suspendu" });
