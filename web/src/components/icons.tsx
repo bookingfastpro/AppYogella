@@ -235,6 +235,31 @@ export const IconShrink = (p: IconProps) => (
     <path d="M9 4v4a1 1 0 0 1-1 1H4M20 9h-4a1 1 0 0 1-1-1V4M15 20v-4a1 1 0 0 1 1-1h4M4 15h4a1 1 0 0 1 1 1v4" />
   </Svg>
 )
+export const IconCalendar = (p: IconProps) => (
+  <Svg {...p} strokeWidth={p.strokeWidth ?? 2.2}>
+    <rect x="3" y="4.5" width="18" height="16.5" rx="3" />
+    <path d="M3 9.5h18M8 2.5v4M16 2.5v4" />
+  </Svg>
+)
+export const IconClock = (p: IconProps) => (
+  <Svg {...p} strokeWidth={p.strokeWidth ?? 2.2}>
+    <circle cx="12" cy="12" r="9" />
+    <path d="M12 7v5l3 2" />
+  </Svg>
+)
+export const IconMapPin = (p: IconProps) => (
+  <Svg {...p} strokeWidth={p.strokeWidth ?? 2.2}>
+    <path d="M12 21s-7-6.1-7-11.5a7 7 0 0 1 14 0C19 14.9 12 21 12 21z" />
+    <circle cx="12" cy="9.5" r="2.5" />
+  </Svg>
+)
+export const IconRepeat = (p: IconProps) => (
+  <Svg {...p} strokeWidth={p.strokeWidth ?? 2.2}>
+    <path d="m17 2 3 3-3 3" />
+    <path d="M4 11V9a4 4 0 0 1 4-4h12M7 22l-3-3 3-3" />
+    <path d="M20 13v2a4 4 0 0 1-4 4H4" />
+  </Svg>
+)
 export const IconMenu = (p: IconProps) => (
   <Svg {...p} strokeWidth={p.strokeWidth ?? 2.6}>
     <path d="M3 6h18M6 12h12M10 18h4" />

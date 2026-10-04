@@ -7,6 +7,8 @@ import Home from './pages/Home'
 import Explorer from './pages/Explorer'
 import Categorie from './pages/Categorie'
 import Humeur from './pages/Humeur'
+import Reserver from './pages/Reserver'
+import AdminPlanning from './pages/admin/AdminPlanning'
 import Programme from './pages/Programme'
 import Recherche from './pages/Recherche'
 import Lecteur from './pages/Lecteur'
@@ -40,6 +42,7 @@ export default function App() {
             <Route path="explorer" element={<Explorer />} />
             <Route path="categorie/:slug" element={<Categorie />} />
             <Route path="humeur/:key" element={<Humeur />} />
+            <Route path="reserver" element={<Reserver />} />
             <Route path="recherche" element={<Recherche />} />
             <Route path="experts" element={<Experts />} />
             <Route path="pratique" element={<Pratique />} />
@@ -61,6 +64,7 @@ export default function App() {
               <Route path="admin" element={<AdminLayout />}>
                 <Route index element={<AdminCours />} />
                 <Route path="programmes" element={<AdminProgrammes />} />
+                <Route path="planning" element={<AdminPlanning />} />
                 <Route path="utilisateurs" element={<AdminUtilisateurs />} />
                 <Route path="abonnements" element={<AdminAbonnements />} />
                 <Route path="notifications" element={<AdminNotifications />} />

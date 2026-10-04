@@ -1,11 +1,13 @@
 import { NavLink } from 'react-router-dom'
-import { IconHome, IconSearch, IconPulse, IconHeart, IconUser } from './icons'
+import { IconHome, IconSearch, IconPulse, IconCalendar, IconUser } from './icons'
 
+// Cinq onglets au plus sur mobile : les favoris restent accessibles depuis le
+// Profil et depuis chaque séance.
 const TABS = [
   { to: '/home', label: 'Accueil', Icon: IconHome, end: true },
   { to: '/recherche', label: 'Recherche', Icon: IconSearch },
+  { to: '/reserver', label: 'Studio', Icon: IconCalendar },
   { to: '/pratique', label: 'Ma pratique', Icon: IconPulse },
-  { to: '/favoris', label: 'Favoris', Icon: IconHeart },
   { to: '/profil', label: 'Profil', Icon: IconUser },
 ]
 

@@ -11,6 +11,8 @@ import { catalogRouter } from "./routes/catalog.js";
 import { userRouter } from "./routes/user.js";
 import { subscriptionRouter, stripeWebhookHandler } from "./routes/subscription.js";
 import { adminRouter } from "./routes/admin.js";
+import { classesRouter } from "./routes/classes.js";
+import { adminClassesRouter } from "./routes/adminClasses.js";
 import { uploadDirPath } from "./lib/upload.js";
 import { prisma } from "./lib/prisma.js";
 
@@ -74,6 +76,8 @@ app.use("/api/auth", authRouter);
 app.use("/api", catalogRouter);
 app.use("/api", userRouter);
 app.use("/api", subscriptionRouter);
+app.use("/api", classesRouter);
+app.use("/api/admin", adminClassesRouter);
 app.use("/api/admin", adminRouter);
 
 // Unmatched /api routes must 404 as JSON rather than falling through to the SPA.

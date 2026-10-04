@@ -1,11 +1,12 @@
 import { useEffect, useRef } from 'react'
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../lib/AuthContext'
-import { IconBell, IconCard, IconChevronLeft, IconLayers, IconLogOut, IconPlayCircle, IconUsers } from '../../components/icons'
+import { IconBell, IconCalendar, IconCard, IconChevronLeft, IconLayers, IconLogOut, IconPlayCircle, IconUsers } from '../../components/icons'
 
 const TABS = [
   { to: '/admin', label: 'Cours', icon: IconPlayCircle, end: true },
   { to: '/admin/programmes', label: 'Programmes', icon: IconLayers },
+  { to: '/admin/planning', label: 'Planning', icon: IconCalendar },
   { to: '/admin/utilisateurs', label: 'Utilisateurs', icon: IconUsers },
   { to: '/admin/abonnements', label: 'Abonnements', icon: IconCard },
   { to: '/admin/notifications', label: 'Notifications', icon: IconBell },

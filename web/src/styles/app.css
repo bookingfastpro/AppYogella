@@ -1485,6 +1485,177 @@
   .edit-sheet-handle { display: none; }
 }
 
+/* ───────────────────────── Réservation de cours au studio ─────────────────────────
+   Côté utilisatrice : bandeau de dates, cartes de cours avec jauge de places.
+   Côté admin : sélecteur de date et planning, une ligne par cours. */
+
+/* Mes réservations : cartes en rail horizontal. */
+.booking-rail {
+  display: flex; gap: 12px; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none;
+  margin-inline: -20px; padding: 2px 20px 6px; scroll-padding-inline: 20px;
+}
+.booking-rail::-webkit-scrollbar { display: none; }
+.booking-card {
+  flex: none; width: 228px; scroll-snap-align: start; display: flex; flex-direction: column; gap: 6px;
+  padding: 14px 16px; border-radius: 22px; background: var(--color-accent-2-100); border: 1px solid var(--color-accent-2-300);
+}
+.booking-card.cancelled { background: var(--color-neutral-200); border-color: var(--color-divider); opacity: .85; }
+.booking-when { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+.booking-day { font-size: 12.5px; font-weight: 700; color: var(--color-accent-2-800); }
+.booking-time { font-family: var(--font-heading); font-size: 20px; color: var(--color-accent-2-900); }
+.booking-title { font-size: 15px; font-weight: 700; line-height: 1.3; }
+.booking-meta { display: flex; align-items: center; gap: 5px; font-size: 12.5px; color: var(--color-neutral-700); }
+.booking-cancel { align-self: flex-start; margin-left: -12px; }
+
+/* Bandeau des 14 prochains jours. */
+.day-strip {
+  display: flex; gap: 8px; overflow-x: auto; scroll-snap-type: x proximity; scrollbar-width: none;
+  margin-inline: -20px; padding: 2px 20px 6px;
+}
+.day-strip::-webkit-scrollbar { display: none; }
+.day-chip {
+  flex: none; scroll-snap-align: start; width: 56px; padding: 10px 0 8px; border-radius: 18px; cursor: pointer;
+  display: flex; flex-direction: column; align-items: center; gap: 3px; font-family: inherit;
+  border: 1px solid var(--color-divider); background: var(--color-neutral-100); color: var(--color-text);
+  -webkit-tap-highlight-color: transparent; transition: background-color .18s ease, border-color .18s ease, transform .12s ease;
+}
+.day-chip:hover { border-color: var(--color-neutral-400); }
+.day-chip:active { transform: scale(.95); }
+.day-chip-name { font-size: 11.5px; font-weight: 700; color: var(--color-neutral-700); }
+.day-chip-num { font-family: var(--font-heading); font-size: 20px; line-height: 1.1; }
+.day-chip-dot { width: 6px; height: 6px; border-radius: 999px; background: transparent; }
+.day-chip-dot.on { background: var(--color-accent-2-600); }
+.day-chip.today .day-chip-name { color: var(--color-accent-700); }
+.day-chip.active { background: var(--color-accent-2-700); border-color: transparent; color: #fff; box-shadow: 0 8px 18px -8px color-mix(in srgb, var(--color-accent-2-800) 80%, transparent); }
+.day-chip.active .day-chip-name { color: rgba(255, 255, 255, .85); }
+.day-chip.active .day-chip-dot.on { background: #fff; }
+.day-chip:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--color-bg), 0 0 0 5px var(--color-accent-500); }
+
+/* Carte de cours : heure à gauche, informations, action. */
+.class-card {
+  display: grid; grid-template-columns: 62px minmax(0, 1fr); gap: 12px 14px; align-items: start;
+  padding: 16px; border-radius: 22px; background: var(--color-neutral-100); border: 1px solid var(--color-divider);
+  transition: border-color .15s ease, box-shadow .2s ease;
+}
+.class-card:hover { border-color: var(--color-neutral-400); box-shadow: var(--shadow-sm); }
+.class-card.is-mine { border-color: var(--color-accent-2-400); background: color-mix(in srgb, var(--color-accent-2-100) 55%, var(--color-neutral-100)); }
+.class-card.is-cancelled, .class-card.is-past { opacity: .62; }
+.class-card.is-cancelled .class-title { text-decoration: line-through; text-decoration-thickness: 1.5px; }
+.class-time { display: flex; flex-direction: column; align-items: flex-start; padding-top: 1px; border-right: 1px solid var(--color-divider); padding-right: 10px; }
+.class-start { font-family: var(--font-heading); font-size: 20px; line-height: 1.1; }
+.class-end { font-size: 12px; color: var(--color-neutral-700); margin-top: 3px; }
+.class-body { display: flex; flex-direction: column; gap: 7px; min-width: 0; }
+.class-title { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; font-size: 16px; font-weight: 700; line-height: 1.3; }
+.class-meta { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 12.5px; color: var(--color-neutral-700); }
+.class-meta span { display: inline-flex; align-items: center; gap: 4px; }
+.class-level { padding: 1px 8px; border-radius: 999px; background: var(--color-neutral-200); font-weight: 600; }
+.class-badge {
+  display: inline-flex; align-items: center; gap: 4px; padding: 2px 9px; border-radius: 999px;
+  font-size: 11px; font-weight: 700; white-space: nowrap;
+}
+.class-badge.mine { background: var(--color-accent-2-700); color: #fff; }
+.class-badge.off { background: var(--color-neutral-200); color: var(--color-neutral-700); }
+.class-capacity { display: flex; align-items: center; gap: 9px; font-size: 12.5px; font-weight: 600; color: var(--color-accent-2-800); }
+.class-capacity-bar { width: 64px; height: 6px; flex: none; border-radius: 999px; background: var(--color-neutral-200); overflow: hidden; }
+.class-capacity-bar span { display: block; height: 100%; border-radius: 999px; background: var(--color-accent-2-600); }
+.class-capacity.low { color: #8a5a10; }
+.class-capacity.low .class-capacity-bar span { background: #d39a2c; }
+.class-capacity.full, .class-capacity.off { color: var(--color-neutral-700); }
+.class-capacity.full .class-capacity-bar span { background: var(--color-neutral-500); }
+.class-action { grid-column: 2; display: flex; justify-content: flex-end; }
+@media (min-width: 560px) {
+  .class-card { grid-template-columns: 70px minmax(0, 1fr) auto; align-items: center; }
+  .class-action { grid-column: 3; }
+}
+
+/* Fenêtre de confirmation. */
+.confirm-class { display: flex; flex-direction: column; gap: 12px; padding: 16px; border-radius: 18px; background: var(--color-neutral-100); }
+.confirm-class-title { font-family: var(--font-heading); font-size: 20px; }
+.confirm-class-facts { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; font-size: 14px; }
+.confirm-class-facts li { display: flex; align-items: center; gap: 9px; }
+.confirm-class-facts svg { color: var(--color-accent-2-700); flex: none; }
+.confirm-class-desc { margin: 0; font-size: 13.5px; line-height: 1.55; color: var(--color-neutral-800); white-space: pre-line; }
+
+/* Admin : sélecteur de date. */
+.plan-picker {
+  display: flex; flex-direction: column; gap: 12px; padding: 14px; border-radius: 20px;
+  background: var(--color-neutral-100); border: 1px solid color-mix(in srgb, #201e1d 11%, transparent);
+}
+.plan-picker-top { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.plan-date {
+  position: relative; flex: 1; min-width: 180px; display: flex; align-items: center; justify-content: center; gap: 8px;
+  min-height: 42px; padding: 0 14px; border-radius: 999px; background: var(--color-neutral-200); cursor: pointer;
+  font-weight: 700; font-size: 14.5px;
+}
+.plan-date-label::first-letter { text-transform: uppercase; }
+/* Le champ date natif couvre tout le libellé : un toucher ouvre le calendrier du système. */
+.plan-date input { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; border: 0; }
+.plan-date input::-webkit-calendar-picker-indicator { position: absolute; inset: 0; width: 100%; height: 100%; cursor: pointer; }
+.plan-date:focus-within { box-shadow: 0 0 0 3px var(--color-neutral-100), 0 0 0 5px var(--color-accent-500); }
+.plan-week { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 6px; }
+.plan-week-day {
+  display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 8px 0 6px; border-radius: 14px; cursor: pointer;
+  border: 0; background: transparent; font-family: inherit; color: var(--color-text); transition: background-color .15s ease;
+}
+.plan-week-day:hover { background: var(--color-neutral-200); }
+.plan-week-day .name { font-size: 11px; font-weight: 700; color: var(--color-neutral-700); }
+.plan-week-day .num { font-family: var(--font-heading); font-size: 18px; line-height: 1.15; }
+.plan-week-day .dot { width: 5px; height: 5px; border-radius: 999px; }
+.plan-week-day .dot.on { background: var(--color-accent-2-600); }
+.plan-week-day.today .name { color: var(--color-accent-700); }
+.plan-week-day.active { background: var(--color-neutral-800); color: #fff; }
+.plan-week-day.active .name { color: rgba(255, 255, 255, .8); }
+.plan-week-day.active .dot.on { background: #fff; }
+
+/* Admin : une ligne par cours. */
+.plan-row { border-radius: 18px; background: var(--color-neutral-100); border: 1px solid color-mix(in srgb, #201e1d 11%, transparent); overflow: hidden; transition: border-color .15s ease, box-shadow .15s ease; }
+.plan-row:hover, .plan-row.open { border-color: var(--color-neutral-400); box-shadow: var(--shadow-sm); }
+.plan-row.cancelled { opacity: .7; }
+.plan-row.cancelled .adm-row-title { text-decoration: line-through; text-decoration-thickness: 1.5px; }
+.plan-row.past .plan-row-time .start { color: var(--color-neutral-600); }
+.plan-row-main { display: flex; align-items: center; gap: 14px; padding: 12px 10px 12px 14px; }
+.plan-row-time { flex: none; width: 58px; display: flex; flex-direction: column; padding-right: 12px; border-right: 1px solid color-mix(in srgb, #201e1d 11%, transparent); }
+.plan-row-time .start { font-family: var(--font-heading); font-size: 19px; line-height: 1.1; }
+.plan-row-time .end { font-size: 12px; color: var(--color-neutral-700); margin-top: 3px; }
+.plan-row-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px; }
+.plan-row-meta { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 12.5px; color: var(--color-neutral-700); }
+.plan-row-meta span { display: inline-flex; align-items: center; gap: 4px; }
+.plan-fill { display: flex; align-items: center; gap: 9px; }
+.plan-fill-bar { width: 110px; max-width: 40%; height: 6px; border-radius: 999px; background: var(--color-neutral-200); overflow: hidden; }
+.plan-fill-bar span { display: block; height: 100%; border-radius: 999px; background: var(--color-accent-2-600); }
+.plan-fill.full .plan-fill-bar span { background: var(--color-accent-600); }
+.plan-fill-text { font-size: 12.5px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.adm-text-btn { display: inline-flex; align-items: center; gap: 6px; }
+.adm-text-btn.on { background: var(--color-neutral-800); color: #fff; border-color: transparent; }
+.plan-attendees { padding: 4px 14px 14px; border-top: 1px solid color-mix(in srgb, #201e1d 11%, transparent); }
+.plan-attendees ol { list-style: none; margin: 0; padding: 8px 0 0; display: flex; flex-direction: column; gap: 4px; }
+.plan-attendees li { display: flex; align-items: center; gap: 10px; padding: 6px 4px; border-radius: 12px; }
+.plan-attendees li:hover { background: var(--color-neutral-200); }
+.plan-attendee { flex: 1; min-width: 0; display: flex; flex-direction: column; font-size: 13.5px; }
+.plan-attendee span { font-size: 12px; color: var(--color-neutral-700); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.adm-avatar.small { width: 32px; height: 32px; font-size: 13px; }
+
+/* Admin : formulaire de cours. */
+.weekday-picker { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 6px; }
+.weekday-picker button {
+  min-height: 40px; border-radius: 12px; cursor: pointer; font: 700 12.5px/1 var(--font-body);
+  border: 1.5px solid color-mix(in srgb, #201e1d 11%, transparent); background: var(--color-neutral-100); color: var(--color-neutral-800);
+  transition: background-color .15s ease, border-color .15s ease, transform .12s ease;
+}
+.weekday-picker button:active { transform: scale(.94); }
+.weekday-picker button.on { background: var(--color-accent-2-700); border-color: transparent; color: #fff; }
+.recur-summary {
+  display: flex; align-items: flex-start; gap: 8px; margin: 0; padding: 10px 12px; border-radius: 14px;
+  background: var(--color-accent-2-100); color: var(--color-accent-2-800); font-size: 13px; font-weight: 600; line-height: 1.45;
+}
+.recur-summary svg { flex: none; margin-top: 2px; }
+.plan-danger { display: flex; flex-wrap: wrap; gap: 8px; padding-top: 6px; border-top: 1px dashed color-mix(in srgb, #201e1d 15%, transparent); }
+
+@media (prefers-reduced-motion: reduce) {
+  .day-chip, .weekday-picker button { transition: none; }
+  .day-chip:active, .weekday-picker button:active { transform: none; }
+}
+
 /* ───────────────────────── Boutons : finitions ─────────────────────────
    Placé en fin de fichier pour s'appliquer après les règles de chaque écran. */
 
