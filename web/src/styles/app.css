@@ -348,6 +348,14 @@
 .tab-item { min-height: 50px; color: var(--color-neutral-700); transition: color .15s ease; }
 .tab-icon { display: flex; align-items: center; justify-content: center; width: 54px; height: 30px; border-radius: 999px; transition: background .2s ease; }
 .tab-item.active .tab-icon { background: var(--color-accent-2-100); }
+/* Badge des notifications non lues sur l'onglet Accueil, vert sauge comme la cloche. */
+.tab-icon { position: relative; }
+.tab-badge {
+  position: absolute; top: -4px; left: calc(50% + 4px); min-width: 18px; height: 18px; padding: 0 5px;
+  border-radius: 999px; background: var(--color-accent-2-700); color: #fff;
+  font-size: 10px; font-weight: 800; line-height: 18px; text-align: center;
+  box-shadow: 0 0 0 2px var(--color-neutral-100);
+}
 .tab-item:hover:not(.active) { color: var(--color-neutral-800); }
 
 /* Accueil */
@@ -652,6 +660,7 @@
 @media (min-width: 1024px) {
   /* La barre devient un rail latéral : c'est l'onglet entier qui porte l'état actif. */
   .tab-icon { width: auto; height: auto; background: none !important; }
+  .tab-badge { top: -7px; left: 12px; }
 }
 @media (prefers-reduced-motion: reduce) {
   .practice-ring-arc, .mood-btn, .list-row, .tab-icon { transition: none; }
@@ -1147,7 +1156,7 @@
 .notif-bell:hover { background: var(--color-neutral-300); }
 .notif-badge {
   position: absolute; top: -3px; right: -3px; min-width: 19px; height: 19px; padding: 0 5px;
-  border-radius: 999px; background: var(--color-accent-600); color: #fff;
+  border-radius: 999px; background: var(--color-accent-2-700); color: #fff;
   font-size: 10.5px; font-weight: 700; line-height: 19px; text-align: center;
   box-shadow: 0 0 0 2px var(--color-bg);
 }
@@ -1176,11 +1185,26 @@
   list-style: none; margin: 0; padding: 8px 10px 16px; overflow-y: auto; overscroll-behavior: contain;
   display: flex; flex-direction: column; gap: 4px;
 }
-.notif-item { position: relative; padding: 13px 14px 13px 16px; border-radius: 18px; }
+.notif-item { position: relative; border-radius: 18px; }
 .notif-item.unread { background: var(--color-neutral-100); }
+/* Ligne de notification : icône du type, texte, point « non lue ». Bouton si elle mène quelque part. */
+.notif-item-btn {
+  display: flex; align-items: flex-start; gap: 12px; width: 100%; padding: 13px 14px; border: 0; border-radius: 18px;
+  background: none; text-align: left; font: inherit; color: inherit;
+}
+button.notif-item-btn { cursor: pointer; transition: background-color .15s ease; }
+button.notif-item-btn:hover { background: var(--color-neutral-200); }
+button.notif-item-btn:focus-visible { outline: none; box-shadow: 0 0 0 2px var(--color-accent-500); }
+.notif-kind {
+  width: 34px; height: 34px; flex: none; border-radius: 999px; display: flex; align-items: center; justify-content: center;
+}
+.notif-kind.announcement { background: var(--color-accent-100); color: var(--color-accent-700); }
+.notif-kind.booking { background: var(--color-accent-2-100); color: var(--color-accent-2-700); }
+.notif-item-main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.notif-item-link { margin-top: 6px; font-size: 12.5px; font-weight: 700; color: var(--color-accent-2-700); }
 .notif-dot {
-  position: absolute; left: 6px; top: 19px; width: 6px; height: 6px; border-radius: 999px;
-  background: var(--color-accent-600);
+  flex: none; margin-top: 6px; width: 8px; height: 8px; border-radius: 999px;
+  background: var(--color-accent-2-600);
 }
 .notif-item-head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
 .notif-item-title { font-size: 14.5px; font-weight: 700; line-height: 1.3; min-width: 0; overflow-wrap: anywhere; }

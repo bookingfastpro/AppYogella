@@ -2,7 +2,7 @@ import { Router } from "express";
 import { prisma } from "../lib/prisma.js";
 import { requireAuth } from "../middleware/auth.js";
 import { bookedCount, ensureGenerated, serializeSession } from "../lib/classes.js";
-import { addDays, dayBounds, isDay, today } from "../lib/time.js";
+import { STUDIO_TZ, addDays, dayBounds, isDay, localDay, localTime, today } from "../lib/time.js";
 
 /** Cours physiques au studio : planning et réservations, côté utilisatrice. */
 export const classesRouter = Router();
@@ -54,6 +54,7 @@ class BookingError extends Error {
 classesRouter.post("/classes/:id/book", async (req, res) => {
   const sessionId = req.params.id;
   const userId = req.user!.id;
+  let created = false;
   try {
     await prisma.$transaction(async (tx) => {
       const rows = await tx.$queryRaw<{ capacity: number; cancelled: boolean; starts_at: Date }[]>`
@@ -71,6 +72,7 @@ classesRouter.post("/classes/:id/book", async (req, res) => {
         create: { sessionId, userId },
         update: { status: "booked", cancelledAt: null, createdAt: new Date() },
       });
+      created = true;
     });
   } catch (err) {
     if (err instanceof BookingError) return res.status(err.status).json({ error: err.message });
@@ -79,8 +81,26 @@ classesRouter.post("/classes/:id/book", async (req, res) => {
     }
     throw err;
   }
+  // Alerte aux administratrices : une nouvelle inscription, sans bloquer la réponse en cas d'échec.
+  if (created) await notifyAdminsOfBooking(sessionId, req.user!.name).catch((e) => console.error("Notification réservation", e));
   res.status(201).json({ ok: true });
 });
+
+async function notifyAdminsOfBooking(sessionId: string, who: string) {
+  const s = await prisma.classSession.findUnique({ where: { id: sessionId }, include: bookedCount });
+  if (!s) return;
+  const day = localDay(s.startsAt);
+  const date = new Intl.DateTimeFormat("fr-FR", { timeZone: STUDIO_TZ, weekday: "long", day: "numeric", month: "long" }).format(s.startsAt);
+  await prisma.notification.create({
+    data: {
+      audience: "admins",
+      kind: "booking",
+      title: `Nouvelle réservation · ${s.title}`,
+      body: `${who} s'est inscrite au cours du ${date} à ${localTime(s.startsAt)} (${s._count.bookings}/${s.capacity} places).`,
+      link: `/admin/planning?date=${day}`,
+    },
+  });
+}
 
 /** Annuler sa réservation, jusqu'au début du cours. */
 classesRouter.delete("/classes/:id/book", async (req, res) => {

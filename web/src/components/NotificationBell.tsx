@@ -1,9 +1,10 @@
 import { useEffect, useId, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
+import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../lib/AuthContext'
 import { useMarkNotificationsRead, useNotifications } from '../lib/hooks'
 import { relativeTime } from '../lib/relativeTime'
-import { IconBell, IconX } from './icons'
+import { IconBell, IconCalendar, IconX } from './icons'
 
 /**
  * Cloche de l'accueil : pastille du nombre de notifications non lues, et
@@ -54,6 +55,7 @@ function NotificationPanel({
   onClose: () => void
 }) {
   const titleId = useId()
+  const navigate = useNavigate()
   const closeRef = useRef<HTMLButtonElement>(null)
   // Référence stable : l'effet ci-dessous ne doit tourner qu'à l'ouverture,
   // pas à chaque rafraîchissement des données.
@@ -107,18 +109,44 @@ function NotificationPanel({
           </div>
         ) : (
           <ul className="notif-list">
-            {notifications.map((n) => (
-              <li key={n.id} className={`notif-item${n.read ? '' : ' unread'}`}>
-                {!n.read && <span className="notif-dot" aria-label="Non lue" />}
-                <div className="notif-item-head">
-                  <span className="notif-item-title">{n.title}</span>
-                  <time className="notif-item-time" dateTime={n.createdAt}>
-                    {relativeTime(n.createdAt)}
-                  </time>
-                </div>
-                <p className="notif-item-body">{n.body}</p>
-              </li>
-            ))}
+            {notifications.map((n) => {
+              const content = (
+                <>
+                  <span className={`notif-kind ${n.kind === 'booking' ? 'booking' : 'announcement'}`} aria-hidden="true">
+                    {n.kind === 'booking' ? <IconCalendar size={16} /> : <IconBell size={16} />}
+                  </span>
+                  <span className="notif-item-main">
+                    <span className="notif-item-head">
+                      <span className="notif-item-title">{n.title}</span>
+                      <time className="notif-item-time" dateTime={n.createdAt}>
+                        {relativeTime(n.createdAt)}
+                      </time>
+                    </span>
+                    <span className="notif-item-body">{n.body}</span>
+                    {n.link && <span className="notif-item-link">Voir le planning →</span>}
+                  </span>
+                  {!n.read && <span className="notif-dot" aria-label="Non lue" />}
+                </>
+              )
+              return (
+                <li key={n.id} className={`notif-item${n.read ? '' : ' unread'}${n.link ? ' has-link' : ''}`}>
+                  {n.link ? (
+                    <button
+                      type="button"
+                      className="notif-item-btn"
+                      onClick={() => {
+                        onClose()
+                        navigate(n.link!)
+                      }}
+                    >
+                      {content}
+                    </button>
+                  ) : (
+                    <div className="notif-item-btn">{content}</div>
+                  )}
+                </li>
+              )
+            })}
           </ul>
         )}
       </div>

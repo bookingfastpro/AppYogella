@@ -86,6 +86,10 @@ export interface AppNotification {
   id: string
   title: string
   body: string
+  /** « announcement » (annonce) ou « booking » (nouvelle réservation, admins). */
+  kind: string
+  /** Écran à ouvrir au toucher, s'il y en a un. */
+  link: string | null
   createdAt: string
   read: boolean
 }

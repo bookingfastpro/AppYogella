@@ -108,11 +108,18 @@ model ClassBooking {
   @@map("class_bookings")
 }
 
-/// Message envoyé par l'admin à toutes les utilisatrices (cloche de l'accueil).
+/// Notification de la cloche de l'accueil.
+/// audience « all » : annonce de l'admin à tout le monde ;
+/// « admins » : alerte réservée aux administratrices (ex. nouvelle réservation).
 model Notification {
   id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   title     String
   body      String
+  audience  String   @default("all")
+  /// « announcement » ou « booking » : choisit l'icône affichée.
+  kind      String   @default("announcement")
+  /// Écran à ouvrir au toucher (ex. /admin/planning?date=2026-10-05).
+  link      String?
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
 
   reads NotificationRead[]

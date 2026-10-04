@@ -420,7 +420,9 @@ adminRouter.patch("/settings", async (req, res) => {
 
 adminRouter.get("/notifications", async (_req, res) => {
   const [notifications, accounts] = await Promise.all([
+    // Historique des annonces seulement : les alertes de réservation n'y figurent pas.
     prisma.notification.findMany({
+      where: { audience: "all" },
       orderBy: { createdAt: "desc" },
       take: 100,
       include: { _count: { select: { reads: true } } },

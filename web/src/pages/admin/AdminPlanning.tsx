@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { EditSheet } from '../../components/AdminEdit'
 import { AdminPageHeader, Badge, EmptyState, StatCard, StatGrid, Switch } from '../../components/AdminUI'
 import { IconCalendar, IconChevronLeft, IconChevronRight, IconClock, IconMapPin, IconPencil, IconPlus, IconRepeat, IconTrash, IconUser, IconUsers } from '../../components/icons'
@@ -23,7 +24,12 @@ import {
 
 export default function AdminPlanning() {
   const today = parisToday()
-  const [date, setDate] = useState(today)
+  // La date vit dans l'adresse (?date=…) : une notification de réservation
+  // ouvre directement le bon jour, et le retour arrière reste naturel.
+  const [params, setParams] = useSearchParams()
+  const fromUrl = params.get('date')
+  const date = fromUrl && /^\d{4}-\d{2}-\d{2}$/.test(fromUrl) ? fromUrl : today
+  const setDate = (d: string) => setParams(d === today ? {} : { date: d }, { replace: true })
   const [openId, setOpenId] = useState('')
   const [creating, setCreating] = useState(false)
   const [editing, setEditing] = useState<AdminClassSession | null>(null)

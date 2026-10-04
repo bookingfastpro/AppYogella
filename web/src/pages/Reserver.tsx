@@ -77,35 +77,6 @@ export default function Reserver() {
     <div className="screen">
       <PageHeader title="Cours au studio" subtitle="Réserve ta place pour un cours en présentiel." />
 
-      {mine && mine.length > 0 && (
-        <section>
-          <SectionTitle title="Mes réservations" aside={<span className="ui-count">{mine.length}</span>} />
-          <div className="booking-rail">
-            {mine.map((s) => (
-              <article key={s.id} className={`booking-card${s.cancelled ? ' cancelled' : ''}`}>
-                <div className="booking-when">
-                  <span className="booking-day">{relativeDay(s.day)}</span>
-                  <span className="booking-time">{s.startTime}</span>
-                </div>
-                <div className="booking-title">{s.title}</div>
-                {s.location && (
-                  <div className="booking-meta">
-                    <IconMapPin size={13} /> {s.location}
-                  </div>
-                )}
-                {s.cancelled ? (
-                  <span className="class-badge off">Annulé par le studio</span>
-                ) : (
-                  <button type="button" className="btn btn-ghost btn-sm booking-cancel" onClick={() => cancelBooking(s)}>
-                    Annuler
-                  </button>
-                )}
-              </article>
-            ))}
-          </div>
-        </section>
-      )}
-
       <section>
         <div className="day-strip" role="tablist" aria-label="Choisir un jour">
           {days.map((d) => {
@@ -211,6 +182,35 @@ export default function Reserver() {
           </div>
         )}
       </section>
+
+      {mine && mine.length > 0 && (
+        <section>
+          <SectionTitle title="Mes réservations" aside={<span className="ui-count">{mine.length}</span>} />
+          <div className="booking-rail">
+            {mine.map((s) => (
+              <article key={s.id} className={`booking-card${s.cancelled ? ' cancelled' : ''}`}>
+                <div className="booking-when">
+                  <span className="booking-day">{relativeDay(s.day)}</span>
+                  <span className="booking-time">{s.startTime}</span>
+                </div>
+                <div className="booking-title">{s.title}</div>
+                {s.location && (
+                  <div className="booking-meta">
+                    <IconMapPin size={13} /> {s.location}
+                  </div>
+                )}
+                {s.cancelled ? (
+                  <span className="class-badge off">Annulé par le studio</span>
+                ) : (
+                  <button type="button" className="btn btn-ghost btn-sm booking-cancel" onClick={() => cancelBooking(s)}>
+                    Annuler
+                  </button>
+                )}
+              </article>
+            ))}
+          </div>
+        </section>
+      )}
 
       {confirming && (
         <EditSheet

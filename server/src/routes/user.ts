@@ -40,11 +40,15 @@ userRouter.delete("/favorites/:courseId", async (req, res) => {
 /** Nombre de notifications renvoyées : les plus récentes suffisent à la cloche. */
 const NOTIFICATION_LIMIT = 30;
 
+/** Notifications visibles par ce compte : annonces, plus les alertes admin s'il l'est. */
+const visibleTo = (isAdmin: boolean) => (isAdmin ? {} : { audience: "all" });
+
 userRouter.get("/notifications", async (req, res) => {
   const userId = req.user!.id;
   const [profile, notifications] = await Promise.all([
     prisma.profile.findUnique({ where: { id: userId }, select: { createdAt: true } }),
     prisma.notification.findMany({
+      where: visibleTo(req.user!.isAdmin),
       orderBy: { createdAt: "desc" },
       take: NOTIFICATION_LIMIT,
       include: { reads: { where: { userId }, select: { readAt: true } } },
@@ -56,6 +60,8 @@ userRouter.get("/notifications", async (req, res) => {
     id: n.id,
     title: n.title,
     body: n.body,
+    kind: n.kind,
+    link: n.link,
     createdAt: n.createdAt,
     read: n.reads.length > 0 || n.createdAt < since,
   }));
@@ -73,7 +79,7 @@ userRouter.post("/notifications/read", async (req, res) => {
     parsed.data.ids ??
     (
       await prisma.notification.findMany({
-        where: { reads: { none: { userId } } },
+        where: { ...visibleTo(req.user!.isAdmin), reads: { none: { userId } } },
         select: { id: true },
         orderBy: { createdAt: "desc" },
         take: NOTIFICATION_LIMIT,
