@@ -1,7 +1,8 @@
 import { useNavigate, useParams } from 'react-router-dom'
 import { useProgram } from '../lib/hooks'
 import { useGatedOpen } from '../lib/useGatedOpen'
-import { IconChevronLeft, IconVideo, IconLock, IconCheck } from '../components/icons'
+import { IconChevronLeft } from '../components/icons'
+import { CourseRow } from '../components/CourseRow'
 import heroPhoto from '../assets/course-photo.webp'
 import { Loader } from '../components/Loader'
 
@@ -57,31 +58,9 @@ export default function Programme() {
         )}
         <div>
           <h2 style={{ fontSize: 18, margin: '6px 0 8px' }}>Séances</h2>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+          <div className="ui-list">
             {program.sessions.map((s) => (
-              <button key={s.id} className="list-row" onClick={() => open(s)}>
-                <div className="thumb" style={{ width: 64, height: 56 }}>
-                  {s.thumbnailUrl ? <img src={s.thumbnailUrl} alt="" /> : <IconVideo size={18} />}
-                  {s.locked && (
-                    <span className="lock-badge">
-                      <IconLock size={15} />
-                    </span>
-                  )}
-                </div>
-                <div className="body">
-                  <div className="title">{s.title}</div>
-                  <div className="meta">{s.meta}</div>
-                </div>
-                <span
-                  style={{
-                    width: 28, height: 28, borderRadius: 999, display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none',
-                    background: s.done ? 'var(--color-accent-2-700)' : 'var(--color-neutral-200)',
-                    color: s.done ? '#fff' : 'var(--color-neutral-500)',
-                  }}
-                >
-                  <IconCheck size={15} />
-                </span>
-              </button>
+              <CourseRow key={s.id} course={s} step={s.order} done={s.done} showUniverse={false} />
             ))}
           </div>
         </div>

@@ -394,6 +394,74 @@
   background: rgba(255, 253, 249, .92); color: var(--color-accent-2-800); box-shadow: var(--shadow-md);
 }
 
+/* ── Lignes de séance (srow) ──
+   Petite carte : miniature 16:9 avec durée, titre sur deux lignes, repères,
+   et un bouton rond qui annonce l'action (lire, débloquer, ouvrir, terminée). */
+.srow {
+  display: flex; align-items: center; gap: 14px; width: 100%; min-height: 90px; padding: 10px 12px 10px 10px;
+  border-radius: 22px; border: 1px solid var(--color-divider); background: var(--color-neutral-100);
+  cursor: pointer; text-align: left; font-family: inherit; color: inherit;
+  transition: border-color .15s ease, box-shadow .2s ease, transform .15s ease;
+}
+.srow:hover { border-color: var(--color-neutral-400); box-shadow: var(--shadow-md); }
+.srow:active { transform: scale(.99); }
+.srow:focus-visible { outline: 3px solid var(--color-accent-500); outline-offset: 2px; }
+.srow-thumb {
+  position: relative; flex: none; width: 124px; aspect-ratio: 16 / 9; border-radius: 15px; overflow: hidden;
+  display: flex; align-items: center; justify-content: center; background: var(--color-neutral-200);
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, .04);
+}
+.srow-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform .4s ease; }
+.srow:hover .srow-thumb img { transform: scale(1.06); }
+.srow-thumb.placeholder { background: linear-gradient(150deg, var(--color-accent-2-100), var(--color-accent-2-200)); color: var(--color-accent-2-700); }
+.srow-thumb.placeholder.article { background: linear-gradient(150deg, var(--color-accent-100), var(--color-accent-200)); color: var(--color-accent-700); }
+.srow-dur {
+  position: absolute; right: 6px; bottom: 6px; padding: 2px 7px; border-radius: 8px;
+  font-size: 10.5px; font-weight: 700; line-height: 1.45; background: rgba(24, 22, 20, .72); color: #fff;
+}
+.srow-step {
+  position: absolute; left: 6px; top: 6px; min-width: 24px; height: 24px; padding: 0 6px; border-radius: 999px;
+  display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 800;
+  background: rgba(255, 253, 249, .94); color: var(--color-text); box-shadow: var(--shadow-sm);
+}
+.srow-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px; }
+.srow-title {
+  font-size: 15px; font-weight: 700; line-height: 1.3; color: var(--color-text);
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+}
+.srow-meta { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; font-size: 12.5px; color: var(--color-neutral-700); }
+.srow-meta-text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.srow-tag {
+  font-size: 10px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase;
+  padding: 2px 7px; border-radius: 999px;
+}
+.srow-tag.premium { background: var(--color-neutral-800); color: #fff; }
+.srow-tag.article { background: var(--color-accent-200); color: var(--color-accent-800); }
+.srow-cta {
+  flex: none; width: 38px; height: 38px; border-radius: 999px; display: flex; align-items: center; justify-content: center;
+  transition: transform .15s ease, background .15s ease;
+}
+.srow-cta.play { background: var(--color-accent-2-700); color: #fff; padding-left: 2px; }
+.srow-cta.read { background: var(--color-accent-100); color: var(--color-accent-700); }
+.srow-cta.locked { background: var(--color-neutral-200); color: var(--color-neutral-700); }
+.srow-cta.done { background: var(--color-accent-2-600); color: #fff; }
+.srow:hover .srow-cta.play { transform: scale(1.08); background: var(--color-accent-2-800); }
+.srow.is-done .srow-title { color: var(--color-neutral-700); }
+.srow.is-done .srow-thumb img { filter: saturate(.75); }
+@media (max-width: 380px) {
+  .srow { gap: 11px; }
+  .srow-thumb { width: 104px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .srow, .srow-thumb img, .srow-cta { transition: none; }
+  .srow:hover .srow-thumb img, .srow:hover .srow-cta.play { transform: none; }
+  .srow:active { transform: none; }
+}
+.ui-list { gap: 10px; }
+/* Sur un panneau blanc (page Programme), la carte prend le fond crème pour ressortir. */
+.sheet .srow { background: var(--color-bg); }
+.sheet .srow:hover { background: var(--color-neutral-100); }
+
 /* Vignettes de séance : plus grandes, durée affichée sur l'image. */
 .list-row .thumb { width: 116px; height: 66px; border-radius: 14px; }
 .list-row .lock-chip { left: 5px; top: 5px; right: auto; bottom: auto; }

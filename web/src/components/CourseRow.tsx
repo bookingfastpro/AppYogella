@@ -1,45 +1,74 @@
 import type { Course } from '../lib/api'
-import { IconLock, IconChevronRight, IconPlay, IconPlayCircle, IconList } from './icons'
+import { IconLock, IconChevronRight, IconPlay, IconPlayCircle, IconList, IconCheck } from './icons'
 import { useGatedOpen } from '../lib/useGatedOpen'
 
-export function CourseRow({ course, showChevron = false, showUniverse = true }: { course: Course; showChevron?: boolean; showUniverse?: boolean }) {
+/**
+ * Ligne de séance en carte : miniature avec durée, titre sur deux lignes,
+ * repères (univers, type, premium) et un bouton rond qui annonce l'action —
+ * lire, débloquer ou ouvrir l'article. En mode étape (programme), la
+ * miniature porte le numéro et le bouton devient une coche une fois terminée.
+ */
+export function CourseRow({
+  course,
+  showUniverse = true,
+  step,
+  done = false,
+}: {
+  course: Course
+  showUniverse?: boolean
+  /** Numéro de la séance dans un programme. */
+  step?: number
+  /** Séance déjà terminée (programmes). */
+  done?: boolean
+}) {
   const open = useGatedOpen()
   const isArticle = course.kind === 'ARTICLE'
+  // Le serveur préfixe les séances de programme par « 1. » : le numéro est affiché à part.
+  const title = step !== undefined ? course.title.replace(/^\d+\.\s*/, '') : course.title
+  const kind = isArticle ? 'Lecture' : 'Vidéo'
+
+  const state = course.locked ? 'locked' : done ? 'done' : isArticle ? 'read' : 'play'
+  const action = { locked: 'réservé aux abonnées', done: 'terminée', read: 'lire', play: 'lancer' }[state]
 
   return (
     <button
       type="button"
-      className="list-row"
+      className={`srow${done ? ' is-done' : ''}${course.locked ? ' is-locked' : ''}`}
       onClick={() => open(course)}
-      aria-label={`${course.title}, ${course.meta}${course.locked ? ', réservé aux abonnées' : ''}`}
+      aria-label={`${step !== undefined ? `Séance ${step} : ` : ''}${title}, ${course.durationMin} minutes, ${action}`}
     >
-      <div className={`thumb${course.thumbnailUrl ? '' : isArticle ? ' placeholder article' : ' placeholder'}`}>
+      <span className={`srow-thumb${course.thumbnailUrl ? '' : isArticle ? ' placeholder article' : ' placeholder'}`} aria-hidden="true">
         {course.thumbnailUrl ? (
           <img src={course.thumbnailUrl} alt="" loading="lazy" />
         ) : isArticle ? (
-          <IconList size={20} />
+          <IconList size={22} />
         ) : (
-          <IconPlayCircle size={22} />
+          <IconPlayCircle size={24} />
         )}
-        {course.locked && (
-          <span className="lock-chip" aria-hidden="true">
-            <IconLock size={12} />
-          </span>
-        )}
-        <span className="dur-chip" aria-hidden="true">
-          {!isArticle && !course.locked && <IconPlay size={9} />}
-          {course.durationMin} min
+        {step !== undefined && <span className="srow-step">{step}</span>}
+        <span className="srow-dur">{course.durationMin} min</span>
+      </span>
+
+      <span className="srow-body" aria-hidden="true">
+        <span className="srow-title">{title}</span>
+        <span className="srow-meta">
+          {course.locked && <span className="srow-tag premium">Premium</span>}
+          {isArticle && <span className="srow-tag article">Article</span>}
+          <span className="srow-meta-text">{showUniverse ? `${course.universe} · ${kind}` : kind}</span>
         </span>
-      </div>
-      <div className="body">
-        <div className="title">{course.title}</div>
-        <div className="meta">
-          {isArticle && <span className="kind-tag">Article</span>}
-          {course.locked && <span className="kind-tag premium">Premium</span>}
-          {showUniverse ? course.universe : isArticle ? 'Lecture' : 'Vidéo'}
-        </div>
-      </div>
-      {showChevron && <IconChevronRight size={17} className="chevron" />}
+      </span>
+
+      <span className={`srow-cta ${state}`} aria-hidden="true">
+        {state === 'locked' ? (
+          <IconLock size={15} />
+        ) : state === 'done' ? (
+          <IconCheck size={16} strokeWidth={3} />
+        ) : state === 'read' ? (
+          <IconChevronRight size={17} />
+        ) : (
+          <IconPlay size={15} />
+        )}
+      </span>
     </button>
   )
 }
