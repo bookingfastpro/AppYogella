@@ -32,7 +32,7 @@
   background: var(--color-neutral-100); display: flex; align-items: center; justify-content: center;
   cursor: pointer; flex: none; color: var(--color-text);
 }
-.icon-btn.floating { border: 0; background: rgba(249, 244, 237, .9); }
+.icon-btn.floating { border: 0; background: rgba(255, 253, 249, .92); }
 .icon-btn:hover { background: var(--color-accent-100); }
 
 .brand { font-family: var(--font-heading); font-size: 26px; color: var(--color-accent-700); }
@@ -290,7 +290,8 @@
 .routine-thumb { width: 56px !important; height: 56px !important; background: var(--color-accent-2-100) !important; color: var(--color-accent-2-700) !important; }
 
 /* Barre d'onglets : pastille derrière l'icône de l'onglet actif. */
-.tab-item { min-height: 50px; transition: color .15s ease; }
+/* Onglets inactifs en neutral-700 : le 600 manquait de contraste sur le fond clair. */
+.tab-item { min-height: 50px; color: var(--color-neutral-700); transition: color .15s ease; }
 .tab-icon { display: flex; align-items: center; justify-content: center; width: 54px; height: 30px; border-radius: 999px; transition: background .2s ease; }
 .tab-item.active .tab-icon { background: var(--color-accent-2-100); }
 .tab-item:hover:not(.active) { color: var(--color-neutral-800); }
