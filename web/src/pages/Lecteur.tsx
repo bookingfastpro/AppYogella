@@ -301,7 +301,7 @@ export default function Lecteur() {
               <button type="button" className="player-skip" aria-label="Reculer de 15 secondes" onClick={() => seekTo(currentSec - 15)}>
                 <IconRewind15 size={32} />
               </button>
-              <button type="button" className="player-play" aria-label={playing ? 'Pause' : 'Lecture'} onClick={togglePlay}>
+              <button type="button" className={`player-play${playing ? ' is-playing' : ''}`} aria-label={playing ? 'Pause' : 'Lecture'} onClick={togglePlay}>
                 {playing ? <IconPause size={28} /> : <IconPlay size={28} />}
               </button>
               <button type="button" className="player-skip" aria-label="Avancer de 15 secondes" onClick={() => seekTo(currentSec + 15)}>

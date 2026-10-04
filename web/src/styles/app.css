@@ -1485,5 +1485,96 @@
   .edit-sheet-handle { display: none; }
 }
 
+/* ───────────────────────── Boutons : finitions ─────────────────────────
+   Placé en fin de fichier pour s'appliquer après les règles de chaque écran. */
+
+/* Boutons lecture, une seule famille :
+   - sur fond clair : pastille sauge en dégradé, ombre teintée ;
+   - sur une image : pastille blanc nacré avec un halo.
+   Le triangle ▶ est décalé d'un cheveu pour paraître centré (centrage optique). */
+.resume-card .play, .srow-cta.play, .player-play {
+  background: linear-gradient(145deg, var(--color-accent-2-600), var(--color-accent-2-800));
+  color: #fff;
+  box-shadow: 0 8px 18px -8px color-mix(in srgb, var(--color-accent-2-800) 85%, transparent), inset 0 1px 0 rgba(255, 255, 255, .2);
+  transition: transform .18s ease, box-shadow .18s ease, filter .18s ease;
+}
+.resume-card .play { width: 46px; height: 46px; margin-right: 4px; padding-left: 3px; }
+.srow-cta.play { padding-left: 2px; }
+.player-play:not(.is-playing) { padding-left: 4px; }
+.resume-card:hover .play, .srow:hover .srow-cta.play, .player-play:hover {
+  transform: scale(1.07); filter: brightness(1.06);
+  box-shadow: 0 12px 24px -8px color-mix(in srgb, var(--color-accent-2-800) 90%, transparent), inset 0 1px 0 rgba(255, 255, 255, .22);
+}
+.srow:hover .srow-cta.play { background: linear-gradient(145deg, var(--color-accent-2-600), var(--color-accent-2-800)); }
+.player-play:hover { background: linear-gradient(145deg, var(--color-accent-2-600), var(--color-accent-2-800)); }
+.player-play:active, .resume-card:active .play { transform: scale(.94); }
+
+.featured-play, .player-overlay-btn {
+  background: rgba(255, 253, 249, .96); color: var(--color-accent-2-800);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, .28), 0 0 0 6px rgba(255, 255, 255, .2);
+  transition: transform .2s ease, box-shadow .2s ease;
+}
+.featured-play { padding-left: 3px; }
+.featured-card:hover .featured-play, .player-overlay:hover .player-overlay-btn {
+  transform: scale(1.08); box-shadow: 0 14px 32px rgba(0, 0, 0, .32), 0 0 0 9px rgba(255, 255, 255, .24);
+}
+.player-overlay:active .player-overlay-btn { transform: scale(.95); }
+/* Invitation discrète à lancer la séance : un halo qui respire. */
+.player-overlay-btn::before {
+  content: ""; position: absolute; inset: -6px; border-radius: inherit; border: 2px solid rgba(255, 255, 255, .55);
+  animation: play-breathe 2.4s ease-out infinite;
+}
+@keyframes play-breathe {
+  0% { transform: scale(1); opacity: .8; }
+  100% { transform: scale(1.35); opacity: 0; }
+}
+
+/* Autres actions des lignes : réagissent au survol de la ligne entière. */
+.srow-cta.read, .srow-cta.locked { transition: background-color .18s ease, transform .18s ease; }
+.srow:hover .srow-cta.read { background: var(--color-accent-200); transform: translateX(2px); }
+.srow:hover .srow-cta.locked { background: var(--color-neutral-300); }
+
+/* Cartes et tuiles cliquables : légère élévation au survol, enfoncement au toucher. */
+.mood-btn:hover { transform: translateY(-2px); box-shadow: var(--shadow-sm); }
+.mood-btn:active { transform: scale(.97); box-shadow: none; }
+.univers-tile { transition: transform .18s ease, box-shadow .18s ease, filter .18s ease; }
+.univers-tile:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); filter: saturate(1.05); }
+.univers-tile:active { transform: scale(.98); box-shadow: none; }
+.univers-tile:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--color-bg), 0 0 0 5px var(--color-accent-500); }
+.resume-card:active, .featured-card:active, .srow:active { transform: scale(.99); }
+.pcard:active { transform: translateY(-1px) scale(.985); }
+.pcard-go { transition: transform .2s ease, background-color .2s ease; }
+.pcard:hover .pcard-go { background: #fff; }
+
+/* Petits boutons ronds : cloche, effacer la recherche, boutons sur la vidéo. */
+.notif-bell { transition: background-color .18s ease, transform .12s ease; }
+.notif-bell:active, .player-icon-btn:active { transform: scale(.92); }
+.notif-bell:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--color-bg), 0 0 0 5px var(--color-accent-500); }
+.player-icon-btn { transition: background-color .15s ease, transform .12s ease; }
+.ui-search-clear, .adm-search-clear { transition: background-color .15s ease, transform .12s ease; }
+.ui-search-clear:hover, .adm-search-clear:hover { background: var(--color-neutral-300); }
+.ui-search-clear:active, .adm-search-clear:active { transform: scale(.9); }
+
+/* Navigation : onglets du bas, onglets et menu de l'admin, lignes du profil. */
+.tab-icon { transition: background-color .2s ease, transform .15s ease; }
+.tab-item:active .tab-icon { transform: scale(.88); }
+.tab-item:focus-visible { outline: none; }
+.tab-item:focus-visible .tab-icon { box-shadow: 0 0 0 2px var(--color-accent-500); }
+.adm-nav-item:active, .adm-tab:active { transform: scale(.97); }
+.adm-nav-item, .adm-tab { transition: background-color .15s ease, color .15s ease, transform .12s ease; }
+.menu-row:active { background: var(--color-neutral-300); }
+.auth-hero-switch button, .auth-hero-switch a { min-height: 44px; display: inline-flex; align-items: center; }
+
+@media (prefers-reduced-motion: reduce) {
+  .player-overlay-btn::before { animation: none; display: none; }
+  .resume-card .play, .srow-cta, .player-play, .featured-play, .player-overlay-btn, .univers-tile, .pcard-go,
+  .notif-bell, .player-icon-btn, .tab-icon, .adm-nav-item, .adm-tab { transition: none; }
+  .resume-card:hover .play, .srow:hover .srow-cta.play, .player-play:hover, .player-play:active,
+  .featured-card:hover .featured-play, .player-overlay:hover .player-overlay-btn, .mood-btn:hover, .mood-btn:active,
+  .univers-tile:hover, .univers-tile:active, .resume-card:active, .featured-card:active, .srow:active, .pcard:active,
+  .notif-bell:active, .player-icon-btn:active, .tab-item:active .tab-icon, .adm-nav-item:active, .adm-tab:active,
+  .srow:hover .srow-cta.read { transform: none; }
+}
+
 /* Masquée tant que la navigation est une barre horizontale en bas. */
 .tabbar-brand { display: none; }
