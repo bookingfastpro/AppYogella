@@ -119,7 +119,8 @@
 
 /* Accueil : textes quasi noirs et marque vert forêt, comme la maquette de référence. */
 .home-screen { --home-ink: #131714; --home-muted: #555956; color: var(--home-ink); }
-.home-screen .brand { color: #153c25; }
+/* Vert sauge « yoga », plus clair que l'ancien vert forêt, toujours lisible (≈5:1 sur le fond). */
+.home-screen .brand { color: #4a7354; }
 .home-screen h1,
 .home-screen h2,
 .home-screen .mood-btn .label { color: var(--home-ink); }
@@ -300,6 +301,16 @@
 .home-top { display: flex; align-items: center; justify-content: space-between; }
 .home-date { font-size: 12.5px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--color-neutral-700); }
 .home-hello { font-size: 30px; margin: 4px 0 4px; line-height: 1.1; }
+/* Petit salut de la main à l'arrivée sur l'accueil. */
+.home-wave { display: inline-block; transform-origin: 70% 75%; animation: home-wave 1.4s ease-in-out .3s 1; }
+@keyframes home-wave {
+  0%, 60%, 100% { transform: rotate(0); }
+  10%, 30% { transform: rotate(14deg); }
+  20% { transform: rotate(-8deg); }
+  40% { transform: rotate(-4deg); }
+  50% { transform: rotate(10deg); }
+}
+@media (prefers-reduced-motion: reduce) { .home-wave { animation: none; } }
 .home-question { margin: 0; font-size: 15px; color: var(--home-muted, var(--color-neutral-700)); }
 .mood-btn { min-height: 92px; transition: background .15s ease, border-color .15s ease, transform .15s ease; }
 .mood-btn:active { transform: scale(.98); }

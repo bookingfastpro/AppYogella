@@ -40,7 +40,10 @@ export default function Home() {
       <div>
         <div className="home-date">{today}</div>
         <h1 className="home-hello">
-          {greeting()} {firstName}
+          {greeting()} {firstName}{' '}
+          <span className="home-wave" role="img" aria-label="coucou">
+            👋
+          </span>
         </h1>
         <p className="home-question">Comment te sens-tu aujourd'hui ?</p>
       </div>
