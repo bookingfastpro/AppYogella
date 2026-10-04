@@ -1,43 +1,81 @@
-import { useId, useRef, useState, type ReactNode } from 'react'
+import { useEffect, useId, useRef, useState, type ReactNode } from 'react'
 import { useUploadImage } from '../lib/adminHooks'
 import { useToast } from '../lib/ToastContext'
 import { ApiError } from '../lib/api'
-import { IconUpload, IconTrash } from './icons'
+import { IconUpload, IconTrash, IconX } from './icons'
 
-/** Feuille d'édition modale, remontant du bas comme le reste de l'app. */
+/**
+ * Feuille d'édition modale : remonte du bas sur mobile, boîte de dialogue
+ * centrée sur desktop. C'est un formulaire : Entrée valide, Échap ferme.
+ */
 export function EditSheet({
   title,
+  description,
   onClose,
   onSave,
   saving,
+  submitLabel = 'Enregistrer',
   children,
 }: {
   title: string
+  description?: string
   onClose: () => void
   onSave: () => void
   saving?: boolean
+  submitLabel?: string
   children: ReactNode
 }) {
+  const titleId = useId()
+  const onCloseRef = useRef(onClose)
+  useEffect(() => {
+    onCloseRef.current = onClose
+  })
+
+  // Échap pour fermer, et pas de défilement de la page derrière la feuille.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onCloseRef.current()
+    document.addEventListener('keydown', onKey)
+    const overflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    return () => {
+      document.removeEventListener('keydown', onKey)
+      document.body.style.overflow = overflow
+    }
+  }, [])
+
   return (
     <div className="edit-sheet-backdrop" onClick={onClose} role="presentation">
-      <div className="edit-sheet" onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true" aria-label={title}>
+      <form
+        className="edit-sheet"
+        onClick={(e) => e.stopPropagation()}
+        onSubmit={(e) => {
+          e.preventDefault()
+          if (!saving) onSave()
+        }}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
+      >
         <div className="edit-sheet-handle" />
-        <div className="panel-title" style={{ marginBottom: 4 }}>{title}</div>
-        {children}
-        <div style={{ display: 'flex', gap: 9, marginTop: 4 }}>
-          <button className="btn btn-secondary" style={{ flex: 1 }} onClick={onClose}>
-            Annuler
-          </button>
-          <button
-            className="btn btn-primary"
-            style={{ flex: 1 }}
-            onClick={onSave}
-            disabled={saving}
-          >
-            {saving ? 'Enregistrement…' : 'Enregistrer'}
+        <div className="adm-sheet-head">
+          <div style={{ minWidth: 0 }}>
+            <h2 id={titleId}>{title}</h2>
+            {description && <p>{description}</p>}
+          </div>
+          <button type="button" className="icon-btn" aria-label="Fermer" onClick={onClose}>
+            <IconX size={15} />
           </button>
         </div>
-      </div>
+        {children}
+        <div className="adm-sheet-actions">
+          <button type="button" className="btn btn-secondary" onClick={onClose}>
+            Annuler
+          </button>
+          <button type="submit" className="btn adm-btn-primary" disabled={saving}>
+            {saving ? 'Enregistrement…' : submitLabel}
+          </button>
+        </div>
+      </form>
     </div>
   )
 }
@@ -107,6 +145,7 @@ export function ImagePicker({
           />
           {value ? (
             <button
+              type="button"
               className="btn btn-ghost"
               style={{ alignSelf: 'flex-start', display: 'flex', alignItems: 'center', gap: 6, fontSize: 12.5 }}
               onClick={() => onChange(null)}

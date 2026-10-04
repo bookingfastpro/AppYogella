@@ -50,7 +50,6 @@ app.use(
   // Un fichier absent ne doit pas retomber sur le fallback SPA plus bas.
   (_req, res) => res.status(404).json({ error: "Fichier introuvable" }),
 );
-app.use(attachUser);
 
 // Liveness: answers as soon as the process is up, used as the container healthcheck.
 app.get("/api/health", (_req, res) => res.json({ ok: true }));
@@ -65,6 +64,11 @@ app.get("/api/health/db", async (_req, res) => {
     res.status(503).json({ ok: false, db: "down" });
   }
 });
+
+// Identification de la session : seulement pour l'API, après les routes de
+// santé. Une base injoignable ne doit faire échouer ni le healthcheck ni le
+// chargement de l'application elle-même.
+app.use("/api", attachUser);
 
 app.use("/api/auth", authRouter);
 app.use("/api", catalogRouter);

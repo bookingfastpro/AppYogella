@@ -280,7 +280,20 @@ const userUpdateSchema = z.object({
   isAdmin: z.boolean().optional(),
   active: z.boolean().optional(),
   cyclePlan: z.boolean().optional(),
+  // Choix direct depuis le menu de l'admin (prioritaire sur cyclePlan).
+  plan: z.enum(PLAN_ORDER).optional(),
 });
+
+/** Statut et formule d'un abonnement saisi à la main pour un libellé donné. */
+function manualSubscription(label: (typeof PLAN_ORDER)[number]) {
+  return label === "Aucun"
+    ? { status: "canceled", plan: null }
+    : label === "Essai"
+    ? { status: "trialing", plan: null }
+    : label === "Mensuel"
+    ? { status: "active", plan: "MONTHLY" }
+    : { status: "active", plan: "ANNUAL" };
+}
 
 adminRouter.patch("/users/:id", async (req, res) => {
   const parsed = userUpdateSchema.safeParse(req.body);
@@ -322,19 +335,12 @@ adminRouter.patch("/users/:id", async (req, res) => {
     });
   }
 
-  if (parsed.data.cyclePlan) {
+  if (parsed.data.plan || parsed.data.cyclePlan) {
     const current = planLabelFor(profile.subscription?.status, profile.subscription?.plan);
     // Un abonnement « Actif » sans formule passe à Mensuel plutôt que de perdre l'accès.
     const from = current === "Actif" ? PLAN_ORDER.indexOf("Essai") : PLAN_ORDER.indexOf(current);
-    const next = PLAN_ORDER[(from + 1) % PLAN_ORDER.length];
-    const data =
-      next === "Aucun"
-        ? { status: "canceled", plan: null }
-        : next === "Essai"
-        ? { status: "trialing", plan: null }
-        : next === "Mensuel"
-        ? { status: "active", plan: "MONTHLY" }
-        : { status: "active", plan: "ANNUAL" };
+    const next = parsed.data.plan ?? PLAN_ORDER[(from + 1) % PLAN_ORDER.length];
+    const data = manualSubscription(next);
     await prisma.subscription.upsert({
       where: { userId: profile.id },
       create: { userId: profile.id, stripeCustomerId: manualCustomerId(profile.id), isManual: true, ...data },

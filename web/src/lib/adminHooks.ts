@@ -113,7 +113,7 @@ export function useAdminPrograms() {
 export function useAddProgram() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: (body: { title: string; description?: string }) =>
+    mutationFn: (body: { title: string; description?: string; isRoutine?: boolean }) =>
       api.post<{ program: { id: string } }>('/api/admin/programs', body),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['admin', 'programs'] }),
   })
@@ -124,6 +124,14 @@ export function useUpdateProgram() {
   return useMutation({
     mutationFn: ({ id, ...body }: { id: string } & Record<string, unknown>) =>
       api.patch(`/api/admin/programs/${id}`, body),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['admin', 'programs'] }),
+  })
+}
+
+export function useDeleteProgram() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (id: string) => api.delete(`/api/admin/programs/${id}`),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['admin', 'programs'] }),
   })
 }
@@ -147,7 +155,7 @@ export function useAdminUsers() {
 export function useUpdateUser() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: ({ id, ...body }: { id: string; name?: string; email?: string; isAdmin?: boolean; active?: boolean; cyclePlan?: boolean }) =>
+    mutationFn: ({ id, ...body }: { id: string; name?: string; email?: string; isAdmin?: boolean; active?: boolean; cyclePlan?: boolean; plan?: 'Aucun' | 'Essai' | 'Mensuel' | 'Annuel' }) =>
       api.patch(`/api/admin/users/${id}`, body),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['admin', 'users'] }),
   })

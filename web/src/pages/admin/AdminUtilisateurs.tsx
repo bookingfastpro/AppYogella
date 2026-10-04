@@ -1,31 +1,46 @@
 import { useState } from 'react'
 import { useAdminUsers, useUpdateUser, type AdminUser } from '../../lib/adminHooks'
 import { EditSheet } from '../../components/AdminEdit'
+import { AdminPageHeader, Badge, EmptyState, FilterChips, SearchField, StatCard, StatGrid, Switch, Toolbar, matches, type Tone } from '../../components/AdminUI'
 import { useToast } from '../../lib/ToastContext'
 import { useAuth } from '../../lib/AuthContext'
 import { ApiError } from '../../lib/api'
-import { IconCircleCheck, IconCirclePause, IconPencil } from '../../components/icons'
+import { IconPencil, IconSearch, IconUsers } from '../../components/icons'
 import { Loader } from '../../components/Loader'
 
-const PLAN_COLORS: Record<string, { bg: string; fg: string }> = {
-  Aucun: { bg: 'var(--color-neutral-300)', fg: 'var(--color-neutral-800)' },
-  Essai: { bg: 'var(--color-accent-200)', fg: 'var(--color-accent-800)' },
-  Mensuel: { bg: 'var(--color-accent-2-200)', fg: 'var(--color-accent-2-800)' },
-  Annuel: { bg: 'var(--color-accent-2-200)', fg: 'var(--color-accent-2-800)' },
-  Actif: { bg: 'var(--color-accent-2-200)', fg: 'var(--color-accent-2-800)' },
+type PlanChoice = 'Aucun' | 'Essai' | 'Mensuel' | 'Annuel'
+type Filter = 'all' | 'subscribed' | 'trial' | 'none' | 'suspended'
+
+const PLAN_OPTIONS: { value: PlanChoice; label: string }[] = [
+  { value: 'Aucun', label: 'Aucun abonnement' },
+  { value: 'Essai', label: 'Essai gratuit' },
+  { value: 'Mensuel', label: 'Mensuel' },
+  { value: 'Annuel', label: 'Annuel' },
+]
+
+const PLAN_TONE: Record<AdminUser['plan'], Tone> = {
+  Aucun: 'neutral',
+  Essai: 'sand',
+  Mensuel: 'sage',
+  Annuel: 'sage',
+  Actif: 'sage',
 }
+
+const isSubscribed = (u: AdminUser) => u.plan === 'Mensuel' || u.plan === 'Annuel' || u.plan === 'Actif'
 
 export default function AdminUtilisateurs() {
   const { data, isPending } = useAdminUsers()
   const updateUser = useUpdateUser()
   const flash = useToast()
   const { user: me } = useAuth()
+  const [query, setQuery] = useState('')
+  const [filter, setFilter] = useState<Filter>('all')
   const [editing, setEditing] = useState<AdminUser | null>(null)
 
-  async function cyclePlan(u: AdminUser) {
+  async function changePlan(u: AdminUser, plan: PlanChoice) {
     try {
-      const res = await updateUser.mutateAsync({ id: u.id, cyclePlan: true })
-      flash(`Abonnement de ${u.name} : ${(res as { user: { plan: string } }).user.plan}`)
+      await updateUser.mutateAsync({ id: u.id, plan })
+      flash(`Abonnement de ${u.name} : ${PLAN_OPTIONS.find((o) => o.value === plan)?.label}`)
     } catch (err) {
       flash(err instanceof ApiError ? err.message : "Impossible de changer l'abonnement")
     }
@@ -44,72 +59,112 @@ export default function AdminUtilisateurs() {
 
   if (isPending) return <Loader />
 
+  const users = data?.users ?? []
+  const counts = {
+    all: users.length,
+    subscribed: users.filter(isSubscribed).length,
+    trial: users.filter((u) => u.plan === 'Essai').length,
+    none: users.filter((u) => u.plan === 'Aucun').length,
+    suspended: users.filter((u) => !u.active).length,
+  }
+  const shown = users.filter(
+    (u) =>
+      (filter === 'all' ||
+        (filter === 'subscribed' && isSubscribed(u)) ||
+        (filter === 'trial' && u.plan === 'Essai') ||
+        (filter === 'none' && u.plan === 'Aucun') ||
+        (filter === 'suspended' && !u.active)) &&
+      (!query || matches(`${u.name} ${u.email}`, query)),
+  )
+
   return (
-    <div style={{ padding: '0 20px', display: 'flex', flexDirection: 'column', gap: 14 }}>
-      <div style={{ display: 'flex', gap: 9 }}>
-        <div className="stat-tile">
-          <div className="value">{data?.stats.total ?? 0}</div>
-          <div className="label">comptes</div>
-        </div>
-        <div className="stat-tile">
-          <div className="value">{data?.stats.activeSubscriptions ?? 0}</div>
-          <div className="label">abonnements actifs</div>
-        </div>
-      </div>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-        {(data?.users ?? []).map((u) => {
-          const colors = PLAN_COLORS[u.plan]
-          const isSelf = u.id === me?.id
-          return (
-            <div key={u.id} className="catalog-row" style={u.active ? undefined : { opacity: 0.7 }}>
-              <span className="expert-avatar" style={{ width: 38, height: 38, fontSize: 15 }}>{u.initial}</span>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: 14, fontWeight: 600 }}>
-                  {u.name}
-                  {!u.active && <span style={{ fontSize: 11.5, fontWeight: 600, color: 'var(--color-accent-700)' }}> · suspendu</span>}
+    <div className="adm-page">
+      <AdminPageHeader title="Utilisateurs" description="Comptes, abonnements attribués à la main et accès à l'application." />
+
+      <StatGrid>
+        <StatCard label="Comptes" value={counts.all} />
+        <StatCard label="Abonnées" value={counts.subscribed} tone="sage" />
+        <StatCard label="En essai" value={counts.trial} tone="sand" />
+        <StatCard label="Suspendus" value={counts.suspended} tone={counts.suspended ? 'danger' : 'neutral'} />
+      </StatGrid>
+
+      <Toolbar>
+        <SearchField value={query} onChange={setQuery} label="Rechercher un compte" placeholder="Nom ou e-mail…" />
+        <FilterChips
+          label="Filtrer les comptes"
+          value={filter}
+          onChange={setFilter}
+          options={[
+            { value: 'all', label: 'Tous', count: counts.all },
+            { value: 'subscribed', label: 'Abonnées', count: counts.subscribed },
+            { value: 'trial', label: 'Essai', count: counts.trial },
+            { value: 'none', label: 'Sans abonnement', count: counts.none },
+            { value: 'suspended', label: 'Suspendus', count: counts.suspended },
+          ]}
+        />
+      </Toolbar>
+
+      {users.length === 0 ? (
+        <EmptyState icon={<IconUsers size={24} />} title="Aucun compte" text="Les inscriptions apparaîtront ici." />
+      ) : shown.length === 0 ? (
+        <EmptyState icon={<IconSearch size={22} />} title="Aucun compte ne correspond" text="Modifiez la recherche ou le filtre." />
+      ) : (
+        <ul className="adm-list" aria-label="Comptes">
+          {shown.map((u) => {
+            const isSelf = u.id === me?.id
+            return (
+              <li key={u.id} className={`adm-row adm-user${u.active ? '' : ' suspended'}`}>
+                <span className="adm-avatar">{u.initial}</span>
+                <div className="adm-row-body">
+                  <div className="adm-row-title">
+                    {u.name}
+                    {u.isAdmin && <Badge tone="neutral">Admin</Badge>}
+                    {isSelf && <span className="adm-you">vous</span>}
+                  </div>
+                  <div className="adm-row-meta adm-ellipsis">{u.email}</div>
+                  <div className="adm-row-tags">
+                    <Badge tone={PLAN_TONE[u.plan]}>{u.plan === 'Actif' ? 'Abonnement actif' : u.plan === 'Aucun' ? 'Sans abonnement' : u.plan}</Badge>
+                    <Badge tone={u.active ? 'sage' : 'danger'}>{u.active ? 'Compte actif' : 'Suspendu'}</Badge>
+                  </div>
                 </div>
-                <div className="text-muted" style={{ fontSize: 11.5, marginTop: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                  {u.email}
+                <div className="adm-user-controls">
+                  <select
+                    className="adm-select compact"
+                    aria-label={`Abonnement de ${u.name}`}
+                    value={u.plan === 'Actif' ? '' : u.plan}
+                    disabled={updateUser.isPending}
+                    onChange={(e) => changePlan(u, e.target.value as PlanChoice)}
+                  >
+                    {u.plan === 'Actif' && <option value="">Abonnement actif</option>}
+                    {PLAN_OPTIONS.map((o) => (
+                      <option key={o.value} value={o.value}>{o.label}</option>
+                    ))}
+                  </select>
+                  <div className="adm-row-actions">
+                    <button
+                      type="button"
+                      className={`adm-text-btn${u.active ? ' danger' : ''}`}
+                      disabled={isSelf || updateUser.isPending}
+                      title={isSelf ? 'Votre propre compte ne peut pas être suspendu' : undefined}
+                      onClick={() => toggleActive(u)}
+                    >
+                      {u.active ? 'Suspendre' : 'Réactiver'}
+                    </button>
+                    <button type="button" className="row-action" aria-label={`Éditer ${u.name}`} title="Éditer" onClick={() => setEditing(u)}>
+                      <IconPencil size={17} />
+                    </button>
+                  </div>
                 </div>
-              </div>
-              <button
-                className="tag"
-                style={{ border: 0, cursor: 'pointer', background: colors.bg, color: colors.fg }}
-                title="Changer d'abonnement"
-                disabled={updateUser.isPending}
-                onClick={() => cyclePlan(u)}
-              >
-                {u.plan}
-              </button>
-              <button className="row-action" title="Éditer" onClick={() => setEditing(u)}>
-                <IconPencil size={17} />
-              </button>
-              <button
-                style={{
-                  border: 0, background: 'none', display: 'flex', padding: 2,
-                  cursor: isSelf ? 'not-allowed' : 'pointer', opacity: isSelf ? 0.35 : 1,
-                  color: u.active ? 'var(--color-accent-2-700)' : 'var(--color-accent-700)',
-                }}
-                title={isSelf ? 'Votre propre compte ne peut pas être suspendu' : u.active ? 'Compte actif — suspendre' : 'Compte suspendu — réactiver'}
-                aria-label={u.active ? `Suspendre le compte de ${u.name}` : `Réactiver le compte de ${u.name}`}
-                disabled={isSelf || updateUser.isPending}
-                onClick={() => toggleActive(u)}
-              >
-                {u.active ? <IconCircleCheck size={20} /> : <IconCirclePause size={20} />}
-              </button>
-            </div>
-          )
-        })}
-      </div>
-      <div className="text-muted" style={{ fontSize: 12, lineHeight: 1.5 }}>
-        Touchez l'étiquette pour changer d'abonnement (Aucun → Essai → Mensuel → Annuel), le crayon pour
-        éditer le compte. La dernière icône ne concerne pas l'abonnement : elle suspend ou réactive
-        l'accès au compte.
-      </div>
+              </li>
+            )
+          })}
+        </ul>
+      )}
 
       {editing && (
         <UserEditSheet
           user={editing}
+          isSelf={editing.id === me?.id}
           onClose={() => setEditing(null)}
           saving={updateUser.isPending}
           onSave={async (patch) => {
@@ -130,11 +185,13 @@ export default function AdminUtilisateurs() {
 
 function UserEditSheet({
   user,
+  isSelf,
   onClose,
   onSave,
   saving,
 }: {
   user: AdminUser
+  isSelf: boolean
   onClose: () => void
   onSave: (patch: { name?: string; email?: string; isAdmin?: boolean }) => void
   saving: boolean
@@ -146,33 +203,26 @@ function UserEditSheet({
   return (
     <EditSheet
       title="Éditer le compte"
+      description="Changer l'e-mail modifie aussi l'adresse de connexion."
       onClose={onClose}
       saving={saving}
       onSave={() => onSave({ name: name.trim(), email: email.trim(), isAdmin })}
     >
       <div className="field">
         <label htmlFor="eu-name">Nom</label>
-        <input id="eu-name" className="input" value={name} onChange={(e) => setName(e.target.value)} />
+        <input id="eu-name" className="input" autoComplete="off" value={name} onChange={(e) => setName(e.target.value)} />
       </div>
       <div className="field">
-        <label htmlFor="eu-email">Email</label>
-        <input id="eu-email" className="input" type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
+        <label htmlFor="eu-email">E-mail</label>
+        <input id="eu-email" className="input" type="email" autoComplete="off" value={email} onChange={(e) => setEmail(e.target.value)} />
       </div>
-      <div
-        style={{ display: 'flex', alignItems: 'center', gap: 11, padding: '6px 4px', cursor: 'pointer' }}
-        onClick={() => setIsAdmin((v) => !v)}
-      >
-        <span
-          className="switch"
-          style={{
-            background: isAdmin ? 'var(--color-accent-600)' : 'var(--color-neutral-400)',
-            justifyContent: isAdmin ? 'flex-end' : 'flex-start',
-          }}
-        >
-          <span className="knob" />
-        </span>
-        <span style={{ fontSize: 13.5 }}>Administratrice</span>
-      </div>
+      <Switch
+        label="Administratrice"
+        description={isSelf ? 'Vous ne pouvez pas retirer vos propres droits.' : "Accès à l'onglet Administration."}
+        checked={isAdmin}
+        disabled={isSelf}
+        onChange={setIsAdmin}
+      />
     </EditSheet>
   )
 }

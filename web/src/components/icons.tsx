@@ -189,6 +189,42 @@ export const IconBell = (p: IconProps) => (
     <path d="M10.3 21a2 2 0 0 0 3.4 0" />
   </Svg>
 )
+export const IconPlus = (p: IconProps) => (
+  <Svg {...p} strokeWidth={p.strokeWidth ?? 2.6}>
+    <path d="M12 5v14M5 12h14" />
+  </Svg>
+)
+export const IconPlayCircle = (p: IconProps) => (
+  <Svg {...p} strokeWidth={p.strokeWidth ?? 2.2}>
+    <circle cx="12" cy="12" r="9" />
+    <path d="m10 8.5 5 3.5-5 3.5z" />
+  </Svg>
+)
+export const IconLayers = (p: IconProps) => (
+  <Svg {...p} strokeWidth={p.strokeWidth ?? 2.2}>
+    <path d="m12 3 9 5-9 5-9-5z" />
+    <path d="m3 13 9 5 9-5" />
+  </Svg>
+)
+export const IconUsers = (p: IconProps) => (
+  <Svg {...p} strokeWidth={p.strokeWidth ?? 2.2}>
+    <circle cx="9" cy="8" r="3.5" />
+    <path d="M2.5 20v-1a4.5 4.5 0 0 1 4.5-4.5h4a4.5 4.5 0 0 1 4.5 4.5v1" />
+    <path d="M16 4.6a3.5 3.5 0 0 1 0 6.8M18.5 14.6a4.5 4.5 0 0 1 3 4.4v1" />
+  </Svg>
+)
+export const IconCard = (p: IconProps) => (
+  <Svg {...p} strokeWidth={p.strokeWidth ?? 2.2}>
+    <rect x="2.5" y="5" width="19" height="14" rx="3" />
+    <path d="M2.5 10h19M6.5 15h4" />
+  </Svg>
+)
+export const IconLogOut = (p: IconProps) => (
+  <Svg {...p} strokeWidth={p.strokeWidth ?? 2.2}>
+    <path d="M14 4h4a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-4" />
+    <path d="m9 8-4 4 4 4M5 12h11" />
+  </Svg>
+)
 export const IconMenu = (p: IconProps) => (
   <Svg {...p} strokeWidth={p.strokeWidth ?? 2.6}>
     <path d="M3 6h18M6 12h12M10 18h4" />
