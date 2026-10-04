@@ -20,8 +20,8 @@ export default function Programme() {
     // sinon une bande de fond apparaît sous un programme court.
     <div className="app-sheet-page" style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
       <div className="hero-media" style={{ marginTop: -46, flex: 'none' }}>
-        <img className="washed" src={heroPhoto} alt="" style={{ objectPosition: '50% 45%' }} />
-        <button className="icon-btn floating" style={{ position: 'absolute', left: 18, top: 62 }} onClick={() => navigate(-1)}>
+        <img src={program.coverUrl ?? heroPhoto} alt="" style={{ objectPosition: '50% 45%' }} />
+        <button type="button" className="icon-btn floating" aria-label="Retour" style={{ position: 'absolute', left: 18, top: 62 }} onClick={() => navigate(-1)}>
           <IconChevronLeft size={17} />
         </button>
       </div>
@@ -35,11 +35,16 @@ export default function Programme() {
         </div>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
           <span className="tag" style={{ background: 'var(--color-neutral-100)', color: 'var(--color-neutral-800)' }}>
-            {program.sessions.length} séances
+            {program.sessions.length} séance{program.sessions.length > 1 ? 's' : ''}
           </span>
           <span className="tag" style={{ background: 'var(--color-neutral-100)', color: 'var(--color-neutral-800)' }}>
-            Tous niveaux
+            {program.sessions.reduce((n, s) => n + s.durationMin, 0)} min au total
           </span>
+          {program.sessions.length > 0 && (
+            <span className="tag" style={{ background: 'var(--color-accent-2-100)', color: 'var(--color-accent-2-800)' }}>
+              {program.sessions.filter((s) => s.done).length}/{program.sessions.length} terminée{program.sessions.filter((s) => s.done).length > 1 ? 's' : ''}
+            </span>
+          )}
         </div>
         {nextSession && (
           <button

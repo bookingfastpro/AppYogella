@@ -1,63 +1,88 @@
-import { useNavigate, useParams } from 'react-router-dom'
-import { useCourse, useCourses } from '../lib/hooks'
-import { useGatedOpen } from '../lib/useGatedOpen'
+import { Link, useNavigate, useParams } from 'react-router-dom'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useCourse, useCourses, useFavorites } from '../lib/hooks'
+import { useAuth } from '../lib/AuthContext'
+import { api } from '../lib/api'
 import { CourseRow } from '../components/CourseRow'
-import { IconChevronLeft, IconBookmark, IconPlay, IconLock } from '../components/icons'
+import { SectionTitle } from '../components/ui'
+import { IconChevronLeft, IconHeart, IconLock } from '../components/icons'
 import { Loader } from '../components/Loader'
 
 export default function Article() {
   const { id } = useParams()
   const navigate = useNavigate()
-  const open = useGatedOpen()
+  const { user } = useAuth()
+  const queryClient = useQueryClient()
   const { data: article } = useCourse(id)
   const { data: sameUniverse } = useCourses({ universe: article?.universe })
+  const { data: favorites } = useFavorites(!!user)
+
+  const isFav = favorites?.some((f) => f.id === id) ?? false
+  const toggleFavorite = useMutation({
+    mutationFn: () => (isFav ? api.delete(`/api/favorites/${id}`) : api.post(`/api/favorites/${id}`)),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['favorites'] }),
+  })
 
   if (!article) return <Loader />
   const related = (sameUniverse ?? []).filter((c) => c.id !== article.id)
 
   return (
-    <div className="screen">
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <button className="icon-btn" onClick={() => navigate(-1)}>
+    <div className="screen article">
+      <div className="article-top">
+        <button type="button" className="icon-btn" aria-label="Retour" onClick={() => navigate(-1)}>
           <IconChevronLeft size={17} />
         </button>
-        <IconBookmark size={19} />
-      </div>
-      <div>
-        <div className="text-muted" style={{ fontSize: 13, marginBottom: 8 }}>{article.universe}</div>
-        <h1 style={{ fontSize: 25, margin: '0 0 12px' }}>{article.title}</h1>
-        <div style={{ display: 'flex', alignItems: 'flex-start', gap: 14 }}>
-          <p style={{ margin: 0, flex: 1, fontSize: 14.5, lineHeight: 1.55, color: 'var(--color-neutral-700)' }}>
-            {article.body ?? 'Le contenu de cet article sera bientôt disponible.'}
-          </p>
+        {user && (
           <button
-            className="icon-btn"
-            style={{ width: 52, height: 52, background: 'var(--color-accent-2-700)', color: '#fff', border: 0 }}
-            onClick={() => open(article)}
+            type="button"
+            className={`icon-btn${isFav ? ' fav-on' : ''}`}
+            aria-pressed={isFav}
+            aria-label={isFav ? 'Retirer des favoris' : 'Ajouter aux favoris'}
+            onClick={() => toggleFavorite.mutate()}
           >
-            {article.locked ? <IconLock size={20} /> : <IconPlay size={20} />}
+            <IconHeart size={18} filled={isFav} />
           </button>
-        </div>
-        <div style={{ display: 'flex', gap: 16, marginTop: 14, fontSize: 12.5, color: 'var(--color-neutral-600)' }}>
-          <span>{article.meta}</span>
-          {article.authorName && (
+        )}
+      </div>
+
+      <header>
+        <div className="article-eyebrow">{article.universe} · {article.meta} de lecture</div>
+        <h1 className="article-title">{article.title}</h1>
+        {article.authorName && (
+          <div className="article-author">
+            <span className="article-author-avatar" aria-hidden="true">{article.authorName.slice(0, 1)}</span>
             <span>
               {article.authorName}
-              {article.authorRole ? `, ${article.authorRole}` : ''}
+              {article.authorRole ? <span className="text-muted">, {article.authorRole}</span> : ''}
             </span>
-          )}
+          </div>
+        )}
+      </header>
+
+      {article.locked ? (
+        <div className="article-locked">
+          <span className="article-locked-icon" aria-hidden="true">
+            <IconLock size={20} />
+          </span>
+          <strong>Article réservé aux abonnées</strong>
+          <span>Abonne-toi pour lire la suite et accéder à toutes les séances.</span>
+          <Link to="/abonnement" className="btn ui-btn-primary">
+            Voir les formules
+          </Link>
         </div>
-      </div>
-      <div style={{ height: 1, background: 'var(--color-divider)' }} />
+      ) : (
+        <div className="article-body">{article.body ?? 'Le contenu de cet article sera bientôt disponible.'}</div>
+      )}
+
       {related.length > 0 && (
-        <div>
-          <h2 style={{ fontSize: 17, margin: '0 0 10px' }}>Dans la même catégorie</h2>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+        <section>
+          <SectionTitle title="Dans le même univers" />
+          <div className="ui-list">
             {related.map((r) => (
-              <CourseRow key={r.id} course={r} />
+              <CourseRow key={r.id} course={r} showUniverse={false} />
             ))}
           </div>
-        </div>
+        </section>
       )}
     </div>
   )

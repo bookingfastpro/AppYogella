@@ -1,12 +1,18 @@
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../lib/AuthContext'
-import { usePrograms, usePractice } from '../lib/hooks'
+import { usePlans, usePrograms, usePractice } from '../lib/hooks'
 import { useGatedOpen } from '../lib/useGatedOpen'
 import { MOODS } from '../lib/moods'
-import { IconPlay, IconChevronRight, IconVideo, IconLock } from '../components/icons'
+import { IconPlay, IconChevronRight, IconLayers, IconLock } from '../components/icons'
 import { NotificationBell } from '../components/NotificationBell'
+import { SectionTitle } from '../components/ui'
 import heroPhoto from '../assets/course-photo.webp'
 import { Loader } from '../components/Loader'
+
+/** « Bonjour » le jour, « Bonsoir » à partir de 18 h. */
+function greeting() {
+  return new Date().getHours() >= 18 ? 'Bonsoir' : 'Bonjour'
+}
 
 export default function Home() {
   const { user } = useAuth()
@@ -14,34 +20,42 @@ export default function Home() {
   const open = useGatedOpen()
   const { data: programs, isPending: programsPending } = usePrograms(false)
   const { data: practice } = usePractice(!!user)
-
   const hasAccess = user?.hasAccess ?? false
+  const { data: plans } = usePlans()
+
   const resume = practice?.resume
+  const firstName = user?.name.split(' ')[0] ?? ''
+  const today = new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })
+  const prices = (plans?.plans ?? []).map((p) => `${p.price} / ${p.key === 'ANNUAL' ? 'an' : 'mois'}`).join(' ou ')
 
   if (programsPending) return <Loader />
 
   return (
     <div className="screen home-screen">
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+      <div className="home-top">
         <div className="brand">Yogella</div>
         <NotificationBell />
       </div>
 
       <div>
-        <h1 style={{ fontSize: 27, margin: '0 0 4px' }}>Bonjour {user?.name.split(' ')[0] ?? ''}</h1>
-        <div className="text-muted" style={{ fontSize: 14 }}>Comment te sens-tu aujourd'hui ?</div>
+        <div className="home-date">{today}</div>
+        <h1 className="home-hello">
+          {greeting()} {firstName}
+        </h1>
+        <p className="home-question">Comment te sens-tu aujourd'hui ?</p>
       </div>
 
       <div className="mood-grid">
         {MOODS.map((m) => (
           <button
             key={m.label}
+            type="button"
             className="mood-btn"
             style={m.span ? { gridColumn: `span ${m.span}` } : undefined}
             onClick={() => navigate(m.key ? `/humeur/${m.key}` : '/explorer')}
           >
             <span className="icon-circle" style={{ background: m.bg, color: m.fg }}>
-              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round">
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                 <path d={m.path} />
               </svg>
             </span>
@@ -51,37 +65,44 @@ export default function Home() {
       </div>
 
       {user && resume && (
-        <div>
-          <h2 style={{ fontSize: 18, margin: '0 0 10px' }}>Reprends là où tu t'étais arrêtée</h2>
-          <button className="resume-card" onClick={() => open(resume)}>
+        <section>
+          <SectionTitle title="Reprends là où tu t'étais arrêtée" />
+          <button type="button" className="resume-card" onClick={() => open(resume)}>
             <div className="thumb">
-              <img src={heroPhoto} alt="" style={{ objectPosition: '60% 55%' }} />
+              <img src={resume.thumbnailUrl ?? heroPhoto} alt="" />
             </div>
             <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontSize: 15, fontWeight: 600 }}>{resume.title}</div>
-              <div className="text-muted" style={{ fontSize: 13, marginTop: 2 }}>{resume.meta}</div>
+              <div className="resume-title">{resume.title}</div>
+              <div className="text-muted" style={{ fontSize: 13, marginTop: 2 }}>
+                {resume.universe} · {resume.meta}
+              </div>
+              <div className="resume-progress" aria-label={`Progression ${Math.round(resume.progressPct * 100)} %`}>
+                <span style={{ width: `${Math.max(4, Math.round(resume.progressPct * 100))}%` }} />
+              </div>
             </div>
-            <span className="play">
+            <span className="play" aria-hidden="true">
               <IconPlay size={17} />
             </span>
           </button>
-        </div>
+        </section>
       )}
 
-      <div>
-        <div className="section-title-row">
-          <h2>Nos programmes</h2>
-          <Link to="/explorer" style={{ border: 0, background: 'none', fontSize: 13, textDecoration: 'none' }}>
-            Voir tout
-          </Link>
-        </div>
+      <section>
+        <SectionTitle
+          title="Nos programmes"
+          aside={
+            <Link to="/explorer" className="ui-link">
+              Tout explorer
+            </Link>
+          }
+        />
         <div className="hscroll">
-          {(programs ?? []).slice(0, 3).map((p) => (
-            <button key={p.id} className="prog-card" onClick={() => navigate(`/programme/${p.id}`)}>
+          {(programs ?? []).map((p) => (
+            <button key={p.id} type="button" className="prog-card" onClick={() => navigate(`/programme/${p.id}`)}>
               <div className="cover">
-                {p.coverUrl ? <img src={p.coverUrl} alt="" /> : <IconVideo size={26} />}
+                {p.coverUrl ? <img src={p.coverUrl} alt="" loading="lazy" /> : <IconLayers size={26} />}
                 {p.locked && (
-                  <span className="lock-chip">
+                  <span className="lock-chip" aria-label="Réservé aux abonnées">
                     <IconLock size={14} />
                   </span>
                 )}
@@ -93,7 +114,7 @@ export default function Home() {
             </button>
           ))}
         </div>
-      </div>
+      </section>
 
       {!hasAccess && (
         <Link to="/abonnement" className="promo-card">
@@ -101,10 +122,10 @@ export default function Home() {
             <IconLock size={18} strokeWidth={2.6} />
           </span>
           <div style={{ flex: 1 }}>
-            <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--color-accent-800)' }}>Débloque tous les cours</div>
-            <div style={{ fontSize: 12.5, color: 'var(--color-accent-800)', opacity: 0.85 }}>12 € / mois ou 99 € / an</div>
+            <div className="promo-title">Débloque tous les cours</div>
+            {prices && <div className="promo-sub">{prices}</div>}
           </div>
-          <IconChevronRight size={18} strokeWidth={2.6} style={{ color: 'var(--color-accent-800)' }} />
+          <IconChevronRight size={18} strokeWidth={2.6} />
         </Link>
       )}
     </div>

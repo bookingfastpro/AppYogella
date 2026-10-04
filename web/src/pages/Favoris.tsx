@@ -1,21 +1,41 @@
+import { useNavigate } from 'react-router-dom'
 import { useFavorites } from '../lib/hooks'
 import { CourseRow } from '../components/CourseRow'
+import { EmptyState, PageHeader } from '../components/ui'
+import { IconHeart } from '../components/icons'
 import { Loader } from '../components/Loader'
 
 export default function Favoris() {
+  const navigate = useNavigate()
   const { data: favorites, isPending } = useFavorites(true)
 
   if (isPending) return <Loader />
+  const count = favorites?.length ?? 0
 
   return (
     <div className="screen">
-      <h1 style={{ fontSize: 25, margin: 0 }}>Favoris</h1>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-        {(favorites ?? []).map((c) => (
-          <CourseRow key={c.id} course={c} />
-        ))}
-        {favorites?.length === 0 && <div className="text-muted">Aucun favori pour le moment.</div>}
-      </div>
+      <PageHeader
+        title="Favoris"
+        subtitle={count ? `${count} séance${count > 1 ? 's' : ''} gardée${count > 1 ? 's' : ''} pour plus tard` : undefined}
+      />
+      {count === 0 ? (
+        <EmptyState
+          icon={<IconHeart size={22} />}
+          title="Aucun favori pour le moment"
+          text="Touche le cœur pendant une séance pour la retrouver ici."
+          action={
+            <button type="button" className="btn ui-btn-soft" onClick={() => navigate('/explorer')}>
+              Découvrir des séances
+            </button>
+          }
+        />
+      ) : (
+        <div className="ui-list">
+          {favorites!.map((c) => (
+            <CourseRow key={c.id} course={c} />
+          ))}
+        </div>
+      )}
     </div>
   )
 }

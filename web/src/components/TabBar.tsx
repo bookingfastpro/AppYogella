@@ -11,17 +11,19 @@ const TABS = [
 
 export function TabBar() {
   return (
-    <div className="tabbar">
+    <nav className="tabbar" aria-label="Navigation principale">
       {/* Visible uniquement quand la barre devient un rail latéral. */}
       <div className="tabbar-brand">Yogella</div>
       <div className="tabs">
         {TABS.map(({ to, label, Icon, end }) => (
           <NavLink key={to} to={to} end={end} className={({ isActive }) => `tab-item${isActive ? ' active' : ''}`}>
-            <Icon size={21} strokeWidth={2.4} />
-            <span>{label}</span>
+            <span className="tab-icon">
+              <Icon size={21} strokeWidth={2.4} />
+            </span>
+            <span className="tab-label">{label}</span>
           </NavLink>
         ))}
       </div>
-    </div>
+    </nav>
   )
 }

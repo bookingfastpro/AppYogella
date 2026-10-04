@@ -3,6 +3,7 @@ import { useUniverses } from '../lib/hooks'
 import { api } from '../lib/api'
 import type { Course, ProgramSummary } from '../lib/api'
 import { Loader } from '../components/Loader'
+import { PageHeader } from '../components/ui'
 
 export default function Explorer() {
   const navigate = useNavigate()
@@ -24,11 +25,10 @@ export default function Explorer() {
 
   return (
     <div className="screen">
-      <div className="text-muted" style={{ fontSize: 14 }}>Explorer</div>
-      <h1 style={{ fontSize: 25, margin: 0 }}>Nos univers</h1>
+      <PageHeader title="Nos univers" subtitle="Choisis un univers pour découvrir ses séances." />
       <div className="card-grid">
         {(universes ?? []).map((u) => (
-          <button key={u.id} className="univers-tile" style={{ background: u.bg, color: u.fg }} onClick={() => onSelect(u)}>
+          <button key={u.id} type="button" className="univers-tile" style={{ background: u.bg, color: u.fg }} onClick={() => onSelect(u)}>
             <span className="label">{u.label}</span>
             <span className="blob" />
           </button>

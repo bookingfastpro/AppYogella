@@ -100,6 +100,7 @@ export interface ProgramDetail {
   id: string
   title: string
   description: string | null
+  coverUrl: string | null
   isRoutine: boolean
   sessions: ProgramSession[]
 }

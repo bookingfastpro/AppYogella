@@ -1,93 +1,139 @@
 import { useNavigate } from 'react-router-dom'
 import { usePractice } from '../lib/hooks'
-import { IconVideo, IconLock, IconChevronRight } from '../components/icons'
+import { useGatedOpen } from '../lib/useGatedOpen'
+import { EmptyState, PageHeader, SectionTitle } from '../components/ui'
+import { IconLayers, IconLock, IconChevronRight, IconCheck, IconPlay, IconPulse } from '../components/icons'
 import { Loader } from '../components/Loader'
 
-const CIRC = 2 * Math.PI * 30
+const R = 34
+const CIRC = 2 * Math.PI * R
+
+const formatHours = (h: number) => `${h.toLocaleString('fr-FR', { maximumFractionDigits: 1 })} h`
+
+/** Message d'encouragement selon l'avancement de l'objectif. */
+function encouragement(fraction: number, sessions: number) {
+  if (sessions === 0) return 'Une première séance pour lancer ta semaine ?'
+  if (fraction >= 1) return 'Objectif atteint, bravo !'
+  if (fraction >= 0.5) return 'Plus de la moitié du chemin, continue !'
+  return 'Beau début, chaque séance compte.'
+}
 
 export default function Pratique() {
   const navigate = useNavigate()
+  const open = useGatedOpen()
   const { data, isPending } = usePractice(true)
+
+  if (isPending) return <Loader />
 
   const weekly = data?.weekly ?? { sessionCount: 0, totalMinutes: 0, goalHours: 5, progressHours: 0 }
   const fraction = Math.min(1, weekly.progressHours / (weekly.goalHours || 1))
   const week = data?.week ?? []
-
-  if (isPending) return <Loader />
+  const todayIndex = (new Date().getDay() + 6) % 7 // lundi = 0
+  const activeDays = week.filter((d) => d.active).length
+  const routines = data?.routines ?? []
+  const resume = data?.resume
 
   return (
     <div className="screen">
-      <h1 style={{ fontSize: 25, margin: 0 }}>Ma pratique</h1>
+      <PageHeader title="Ma pratique" subtitle="Ton activité des 7 derniers jours." />
 
-      <div style={{ background: 'var(--color-surface)', borderRadius: 28, padding: '18px 20px', display: 'flex', flexDirection: 'column', gap: 14 }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16 }}>
-          <div>
-            <div style={{ fontSize: 13, color: 'var(--color-neutral-700)' }}>Cette semaine</div>
-            <div style={{ display: 'flex', alignItems: 'baseline', gap: 14, marginTop: 6 }}>
-              <div>
-                <span style={{ fontFamily: 'var(--font-heading)', fontSize: 24 }}>{weekly.sessionCount}</span>{' '}
-                <span style={{ fontSize: 13 }}>séance{weekly.sessionCount === 1 ? '' : 's'}</span>
-              </div>
-              <div>
-                <span style={{ fontFamily: 'var(--font-heading)', fontSize: 24 }}>{weekly.totalMinutes}</span> <span style={{ fontSize: 13 }}>min</span>
-              </div>
-            </div>
-          </div>
-          <svg width="74" height="74" viewBox="0 0 74 74">
-            <circle cx="37" cy="37" r="30" fill="none" stroke="var(--color-neutral-300)" strokeWidth="8" />
+      <section className="practice-card" aria-label="Objectif de la semaine">
+        <div className="practice-ring">
+          <svg width="88" height="88" viewBox="0 0 88 88" aria-hidden="true">
+            <circle cx="44" cy="44" r={R} fill="none" stroke="var(--color-neutral-300)" strokeWidth="9" />
             <circle
-              cx="37" cy="37" r="30" fill="none" stroke="var(--color-accent-2-600)" strokeWidth="8" strokeLinecap="round"
-              strokeDasharray={CIRC} strokeDashoffset={CIRC * (1 - fraction)} transform="rotate(-90 37 37)"
+              cx="44" cy="44" r={R} fill="none" stroke="var(--color-accent-2-600)" strokeWidth="9" strokeLinecap="round"
+              strokeDasharray={CIRC} strokeDashoffset={CIRC * (1 - fraction)} transform="rotate(-90 44 44)"
+              className="practice-ring-arc"
             />
           </svg>
+          <span className="practice-ring-value">{Math.round(fraction * 100)}%</span>
         </div>
-        <div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12.5, color: 'var(--color-neutral-700)', marginBottom: 6 }}>
-            <span>Objectif hebdomadaire</span>
-            <span>
-              {weekly.goalHours}h / {weekly.progressHours}h
-            </span>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div className="practice-eyebrow">Objectif de la semaine</div>
+          <div className="practice-goal">
+            {formatHours(weekly.progressHours)} <span>sur {formatHours(weekly.goalHours)}</span>
           </div>
-          <div style={{ height: 8, borderRadius: 999, background: 'var(--color-neutral-300)', overflow: 'hidden' }}>
-            <div style={{ height: '100%', width: `${fraction * 100}%`, background: 'var(--color-accent-2-600)', borderRadius: 999 }} />
-          </div>
+          <div className="practice-encourage">{encouragement(fraction, weekly.sessionCount)}</div>
+        </div>
+      </section>
+
+      <div className="practice-stats">
+        <div className="practice-stat">
+          <span className="value">{weekly.sessionCount}</span>
+          <span className="label">séance{weekly.sessionCount > 1 ? 's' : ''}</span>
+        </div>
+        <div className="practice-stat">
+          <span className="value">{weekly.totalMinutes}</span>
+          <span className="label">minutes</span>
+        </div>
+        <div className="practice-stat">
+          <span className="value">{activeDays}</span>
+          <span className="label">jour{activeDays > 1 ? 's' : ''} actif{activeDays > 1 ? 's' : ''}</span>
         </div>
       </div>
 
-      <div>
-        <h2 style={{ fontSize: 18, margin: '0 0 8px' }}>Mes routines</h2>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-          {(data?.routines ?? []).map((r) => (
-            <button key={r.id} className="list-row" onClick={() => navigate(`/programme/${r.id}`)}>
-              <div className="thumb" style={{ width: 74, height: 58 }}>
-                {r.locked ? <IconLock size={16} /> : <IconVideo size={18} />}
-              </div>
-              <div className="body">
-                <div className="title">{r.title}</div>
-                <div className="meta">{r.meta}</div>
-              </div>
-              <IconChevronRight size={17} className="chevron" />
-            </button>
-          ))}
-        </div>
-      </div>
-
-      <div>
-        <h2 style={{ fontSize: 18, margin: '0 0 8px' }}>Cette semaine</h2>
-        <div style={{ display: 'flex', justifyContent: 'space-between', background: 'var(--color-neutral-100)', border: '1px solid var(--color-divider)', borderRadius: 26, padding: '16px 14px' }}>
+      <section>
+        <SectionTitle title="Cette semaine" />
+        <ol className="week-strip">
           {week.map((d, i) => (
-            <div key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
-              <span style={{ fontSize: 11.5, color: 'var(--color-neutral-600)' }}>{d.label}</span>
-              <span
-                style={{
-                  width: 26, height: 26, borderRadius: 999,
-                  background: d.active ? 'var(--color-accent-2-500)' : 'var(--color-neutral-200)',
-                }}
-              />
-            </div>
+            <li key={i} className={`${d.active ? 'on' : ''}${i === todayIndex ? ' today' : ''}`}>
+              <span className="day">{d.label}</span>
+              <span className="dot" aria-label={d.active ? 'pratiqué' : 'pas de séance'}>
+                {d.active && <IconCheck size={13} strokeWidth={3.2} />}
+              </span>
+            </li>
           ))}
-        </div>
-      </div>
+        </ol>
+      </section>
+
+      {resume && (
+        <section>
+          <SectionTitle title="En cours" />
+          <button type="button" className="resume-card" onClick={() => open(resume)}>
+            <div className="thumb">{resume.thumbnailUrl && <img src={resume.thumbnailUrl} alt="" />}</div>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div className="resume-title">{resume.title}</div>
+              <div className="text-muted" style={{ fontSize: 13, marginTop: 2 }}>{resume.universe} · {resume.meta}</div>
+              <div className="resume-progress" aria-label={`Progression ${Math.round(resume.progressPct * 100)} %`}>
+                <span style={{ width: `${Math.max(4, Math.round(resume.progressPct * 100))}%` }} />
+              </div>
+            </div>
+            <span className="play" aria-hidden="true">
+              <IconPlay size={17} />
+            </span>
+          </button>
+        </section>
+      )}
+
+      <section>
+        <SectionTitle title="Mes routines" />
+        {routines.length === 0 ? (
+          <EmptyState
+            icon={<IconPulse size={22} />}
+            title="Pas encore de routine"
+            text="Les routines proposées par Yogella apparaîtront ici."
+            action={
+              <button type="button" className="btn ui-btn-soft" onClick={() => navigate('/explorer')}>
+                Explorer les séances
+              </button>
+            }
+          />
+        ) : (
+          <div className="ui-list">
+            {routines.map((r) => (
+              <button key={r.id} type="button" className="list-row" onClick={() => navigate(`/programme/${r.id}`)}>
+                <div className="thumb routine-thumb">{r.locked ? <IconLock size={16} /> : <IconLayers size={20} />}</div>
+                <div className="body">
+                  <div className="title">{r.title}</div>
+                  <div className="meta">{r.meta}</div>
+                </div>
+                <IconChevronRight size={17} className="chevron" />
+              </button>
+            ))}
+          </div>
+        )}
+      </section>
     </div>
   )
 }

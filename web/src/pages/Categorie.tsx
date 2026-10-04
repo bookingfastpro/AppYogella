@@ -49,10 +49,12 @@ export default function Categorie() {
         <div style={{ padding: '0 20px' }}>
           <h2 style={{ fontSize: 17, margin: '0 0 10px' }}>À la une</h2>
           <button
+            type="button"
+            className="featured-card"
             onClick={() => open(featured)}
-            style={{ position: 'relative', height: 150, borderRadius: 26, overflow: 'hidden', cursor: 'pointer', border: 0, padding: 0, width: '100%' }}
+            aria-label={`À la une : ${featured.title}, ${featured.meta}`}
           >
-            <img className="washed" src={heroPhoto} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: '30% 40%' }} />
+            <img src={featured.thumbnailUrl ?? heroPhoto} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: '50% 40%' }} />
             <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg,rgba(32,30,29,0) 35%,rgba(32,30,29,.72) 100%)' }} />
             <div style={{ position: 'absolute', left: 16, bottom: 14, color: '#fff', textAlign: 'left' }}>
               <div style={{ fontSize: 16, fontWeight: 700, lineHeight: 1.25, textShadow: '0 1px 3px rgba(0,0,0,.5)' }}>{featured.title}</div>
