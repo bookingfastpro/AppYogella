@@ -152,9 +152,3 @@ export function Section({ title, aside, children }: { title: string; aside?: Rea
     </section>
   )
 }
-
-/** Normalise pour une recherche insensible à la casse et aux accents. */
-export function matches(text: string, query: string) {
-  const norm = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
-  return norm(text).includes(norm(query.trim()))
-}

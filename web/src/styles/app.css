@@ -351,6 +351,8 @@
 
 /* Chiffres clés */
 .adm-stats { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+/* Sur deux colonnes, une dernière carte seule prend toute la ligne. */
+.adm-stats > .adm-stat:last-child:nth-child(odd) { grid-column: 1 / -1; }
 .adm-stat {
   position: relative; overflow: hidden; padding: 14px 16px 13px; border-radius: 18px;
   background: var(--adm-card); border: 1px solid var(--adm-line);
@@ -378,6 +380,8 @@
 /* Barre d'outils : recherche, filtres, tri. */
 .adm-toolbar { display: flex; flex-direction: column; gap: 10px; }
 .adm-toolbar-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+/* Les filtres gardent leur largeur : c'est le menu qui passe à la ligne s'il manque de place. */
+.adm-toolbar-row .adm-chips { flex: none; max-width: 100%; }
 .adm-search {
   display: flex; align-items: center; gap: 9px; min-height: 44px; padding: 0 8px 0 15px; flex: 1;
   border-radius: 999px; background: var(--adm-card); border: 1px solid var(--adm-line); color: var(--color-neutral-600);
@@ -588,6 +592,7 @@
 
 @media (min-width: 768px) {
   .adm-stats { grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); }
+  .adm-stats > .adm-stat:last-child:nth-child(odd) { grid-column: auto; }
   .adm-content { padding: 22px 28px 40px; }
   .adm-topbar { padding-inline: 28px; }
   .adm-tabs { padding-inline: 28px; }

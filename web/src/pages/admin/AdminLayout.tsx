@@ -1,4 +1,5 @@
-import { NavLink, Outlet, useNavigate } from 'react-router-dom'
+import { useEffect, useRef } from 'react'
+import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../lib/AuthContext'
 import { IconBell, IconCard, IconChevronLeft, IconLayers, IconLogOut, IconPlayCircle, IconUsers } from '../../components/icons'
 
@@ -16,7 +17,17 @@ const TABS = [
  */
 export default function AdminLayout() {
   const navigate = useNavigate()
+  const { pathname } = useLocation()
   const { user } = useAuth()
+  const tabsRef = useRef<HTMLElement>(null)
+
+  // Sur mobile, les onglets défilent : on ramène l'onglet actif dans le champ.
+  useEffect(() => {
+    const nav = tabsRef.current
+    const active = nav?.querySelector<HTMLElement>('.adm-tab.active')
+    if (!nav || !active) return
+    nav.scrollTo({ left: active.offsetLeft - (nav.clientWidth - active.offsetWidth) / 2, behavior: 'smooth' })
+  }, [pathname])
 
   return (
     <div className="adm-layout">
@@ -58,7 +69,7 @@ export default function AdminLayout() {
           <h1>Administration</h1>
           <span className="adm-sidebar-tag">Admin</span>
         </header>
-        <nav className="adm-tabs" aria-label="Sections de l'administration">
+        <nav ref={tabsRef} className="adm-tabs" aria-label="Sections de l'administration">
           {TABS.map(({ to, label, icon: Icon, end }) => (
             <NavLink key={to} to={to} end={end} className={({ isActive }) => `adm-tab${isActive ? ' active' : ''}`}>
               <Icon size={16} />

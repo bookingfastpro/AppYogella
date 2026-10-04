@@ -10,7 +10,8 @@ import {
   type AdminProgram,
 } from '../../lib/adminHooks'
 import { EditSheet, ImagePicker } from '../../components/AdminEdit'
-import { AdminPageHeader, Badge, EmptyState, SearchField, StatCard, StatGrid, Switch, Toolbar, matches } from '../../components/AdminUI'
+import { AdminPageHeader, Badge, EmptyState, SearchField, StatCard, StatGrid, Switch, Toolbar } from '../../components/AdminUI'
+import { matches } from '../../lib/search'
 import { ApiError } from '../../lib/api'
 import { useToast } from '../../lib/ToastContext'
 import { IconCheck, IconChevronRight, IconLayers, IconPencil, IconPlus, IconSearch, IconTrash } from '../../components/icons'
