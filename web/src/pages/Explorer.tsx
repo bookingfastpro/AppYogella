@@ -1,13 +1,15 @@
 import { useNavigate } from 'react-router-dom'
-import { useUniverses } from '../lib/hooks'
+import { usePrograms, useUniverses } from '../lib/hooks'
 import { api } from '../lib/api'
 import type { Course, ProgramSummary } from '../lib/api'
 import { Loader } from '../components/Loader'
-import { PageHeader } from '../components/ui'
+import { PageHeader, SectionTitle } from '../components/ui'
+import { ProgramCard } from '../components/ProgramCard'
 
 export default function Explorer() {
   const navigate = useNavigate()
   const { data: universes, isPending } = useUniverses()
+  const { data: programs } = usePrograms(false)
 
   async function onSelect(u: NonNullable<typeof universes>[number]) {
     if (u.dest === 'categorie') {
@@ -25,15 +27,30 @@ export default function Explorer() {
 
   return (
     <div className="screen">
-      <PageHeader title="Nos univers" subtitle="Choisis un univers pour découvrir ses séances." />
-      <div className="card-grid">
-        {(universes ?? []).map((u) => (
-          <button key={u.id} type="button" className="univers-tile" style={{ background: u.bg, color: u.fg }} onClick={() => onSelect(u)}>
-            <span className="label">{u.label}</span>
-            <span className="blob" />
-          </button>
-        ))}
-      </div>
+      <PageHeader title="Explorer" subtitle="Des programmes guidés et des univers à découvrir à ton rythme." />
+
+      {(programs?.length ?? 0) > 0 && (
+        <section>
+          <SectionTitle title="Programmes" aside={<span className="ui-count">{programs!.length}</span>} />
+          <div className="card-rail">
+            {programs!.map((p) => (
+              <ProgramCard key={p.id} program={p} />
+            ))}
+          </div>
+        </section>
+      )}
+
+      <section>
+        <SectionTitle title="Nos univers" />
+        <div className="card-grid">
+          {(universes ?? []).map((u) => (
+            <button key={u.id} type="button" className="univers-tile" style={{ background: u.bg, color: u.fg }} onClick={() => onSelect(u)}>
+              <span className="label">{u.label}</span>
+              <span className="blob" />
+            </button>
+          ))}
+        </div>
+      </section>
     </div>
   )
 }

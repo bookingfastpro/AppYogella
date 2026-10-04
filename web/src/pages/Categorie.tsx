@@ -47,26 +47,32 @@ export default function Categorie() {
 
       {featured && (
         <div style={{ padding: '0 20px' }}>
-          <h2 style={{ fontSize: 17, margin: '0 0 10px' }}>À la une</h2>
           <button
             type="button"
             className="featured-card"
             onClick={() => open(featured)}
             aria-label={`À la une : ${featured.title}, ${featured.meta}`}
           >
-            <img src={featured.thumbnailUrl ?? heroPhoto} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: '50% 40%' }} />
-            <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg,rgba(32,30,29,0) 35%,rgba(32,30,29,.72) 100%)' }} />
-            <div style={{ position: 'absolute', left: 16, bottom: 14, color: '#fff', textAlign: 'left' }}>
-              <div style={{ fontSize: 16, fontWeight: 700, lineHeight: 1.25, textShadow: '0 1px 3px rgba(0,0,0,.5)' }}>{featured.title}</div>
-              <div style={{ fontSize: 13, marginTop: 4, textShadow: '0 1px 3px rgba(0,0,0,.5)' }}>{featured.meta}</div>
-            </div>
-            <span
-              style={{
-                position: 'absolute', right: 14, bottom: 14, width: 40, height: 40, borderRadius: 999,
-                background: '#fff', color: 'var(--color-accent-2-800)', display: 'flex', alignItems: 'center', justifyContent: 'center',
-              }}
-            >
-              {featured.locked ? <IconLock size={16} /> : <IconPlay size={16} />}
+            <img className="pcard-img" src={featured.thumbnailUrl ?? heroPhoto} alt="" />
+            <span className="pcard-shade" aria-hidden="true" />
+            <span className={`pcard-badge${featured.locked ? ' locked' : ''}`} aria-hidden="true">
+              {featured.locked ? (
+                <>
+                  <IconLock size={11} /> Premium
+                </>
+              ) : (
+                'À la une'
+              )}
+            </span>
+            <span className="featured-body" aria-hidden="true">
+              <span className="pcard-title">{featured.title}</span>
+              <span className="pcard-meta">
+                <span className="pcard-chip">{featured.meta}</span>
+                {featured.authorName && <span className="pcard-chip">{featured.authorName}</span>}
+              </span>
+            </span>
+            <span className="featured-play" aria-hidden="true">
+              {featured.locked ? <IconLock size={18} /> : <IconPlay size={18} />}
             </span>
           </button>
         </div>

@@ -21,24 +21,22 @@ export function CourseRow({ course, showChevron = false, showUniverse = true }: 
         ) : (
           <IconPlayCircle size={22} />
         )}
-        {course.locked ? (
+        {course.locked && (
           <span className="lock-chip" aria-hidden="true">
             <IconLock size={12} />
           </span>
-        ) : (
-          course.thumbnailUrl &&
-          !isArticle && (
-            <span className="play-chip" aria-hidden="true">
-              <IconPlay size={11} />
-            </span>
-          )
         )}
+        <span className="dur-chip" aria-hidden="true">
+          {!isArticle && !course.locked && <IconPlay size={9} />}
+          {course.durationMin} min
+        </span>
       </div>
       <div className="body">
         <div className="title">{course.title}</div>
         <div className="meta">
           {isArticle && <span className="kind-tag">Article</span>}
-          {showUniverse ? `${course.universe} · ${course.meta}` : course.meta}
+          {course.locked && <span className="kind-tag premium">Premium</span>}
+          {showUniverse ? course.universe : isArticle ? 'Lecture' : 'Vidéo'}
         </div>
       </div>
       {showChevron && <IconChevronRight size={17} className="chevron" />}

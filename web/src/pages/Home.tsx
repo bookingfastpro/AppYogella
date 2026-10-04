@@ -3,7 +3,8 @@ import { useAuth } from '../lib/AuthContext'
 import { usePlans, usePrograms, usePractice } from '../lib/hooks'
 import { useGatedOpen } from '../lib/useGatedOpen'
 import { MOODS } from '../lib/moods'
-import { IconPlay, IconChevronRight, IconLayers, IconLock } from '../components/icons'
+import { IconPlay, IconChevronRight, IconLock } from '../components/icons'
+import { ProgramCard } from '../components/ProgramCard'
 import { NotificationBell } from '../components/NotificationBell'
 import { SectionTitle } from '../components/ui'
 import heroPhoto from '../assets/course-photo.webp'
@@ -99,22 +100,9 @@ export default function Home() {
             </Link>
           }
         />
-        <div className="hscroll">
+        <div className="card-rail">
           {(programs ?? []).map((p) => (
-            <button key={p.id} type="button" className="prog-card" onClick={() => navigate(`/programme/${p.id}`)}>
-              <div className="cover">
-                {p.coverUrl ? <img src={p.coverUrl} alt="" loading="lazy" /> : <IconLayers size={26} />}
-                {p.locked && (
-                  <span className="lock-chip" aria-label="Réservé aux abonnées">
-                    <IconLock size={14} />
-                  </span>
-                )}
-              </div>
-              <div className="info">
-                <div className="title">{p.title}</div>
-                <div className="meta">{p.meta}</div>
-              </div>
-            </button>
+            <ProgramCard key={p.id} program={p} />
           ))}
         </div>
       </section>
