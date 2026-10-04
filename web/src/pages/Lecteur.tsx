@@ -33,24 +33,81 @@ function formatTime(totalSeconds: number) {
   return h ? `${h}:${String(m).padStart(2, '0')}:${sec}` : `${m}:${sec}`
 }
 
-/** Plein écran sur la scène vidéo ; repli sur le plein écran natif de la vidéo (iOS). */
-function useFullscreen(stage: React.RefObject<HTMLElement | null>, video: React.RefObject<HTMLVideoElement | null>) {
-  const [isFull, setIsFull] = useState(false)
+type OrientationWithLock = ScreenOrientation & { lock?: (o: string) => Promise<void> }
+
+/**
+ * Plein écran de la scène vidéo, disponible partout :
+ * - API Fullscreen quand le navigateur la permet (Android, ordinateur), avec
+ *   bascule en paysage sur mobile ;
+ * - sinon (iPhone : Safari n'autorise le plein écran que sur une <video>, pas
+ *   sur un lecteur YouTube), un mode « immersif » où la scène couvre tout
+ *   l'écran — tourner le téléphone l'agrandit encore.
+ */
+function useFullscreen(stage: React.RefObject<HTMLElement | null>) {
+  const [native, setNative] = useState(false)
+  const [immersive, setImmersive] = useState(false)
+
   useEffect(() => {
-    const onChange = () => setIsFull(!!document.fullscreenElement)
+    const onChange = () => setNative(document.fullscreenElement === stage.current && !!stage.current)
     document.addEventListener('fullscreenchange', onChange)
     return () => document.removeEventListener('fullscreenchange', onChange)
-  }, [])
-  const supported =
-    typeof document !== 'undefined' &&
-    (document.fullscreenEnabled || !!(video.current as (HTMLVideoElement & { webkitEnterFullscreen?: () => void }) | null)?.webkitEnterFullscreen)
-  const toggle = useCallback(() => {
-    if (document.fullscreenElement) return void document.exitFullscreen()
+  }, [stage])
+
+  // Mode immersif : pas de défilement derrière, Échap pour sortir.
+  useEffect(() => {
+    if (!immersive) return
+    const overflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && setImmersive(false)
+    document.addEventListener('keydown', onKey)
+    return () => {
+      document.body.style.overflow = overflow
+      document.removeEventListener('keydown', onKey)
+    }
+  }, [immersive])
+
+  const enter = useCallback(async () => {
     const el = stage.current
-    if (el?.requestFullscreen) return void el.requestFullscreen().catch(() => undefined)
-    ;(video.current as (HTMLVideoElement & { webkitEnterFullscreen?: () => void }) | null)?.webkitEnterFullscreen?.()
-  }, [stage, video])
-  return { isFull, supported, toggle }
+    if (el?.requestFullscreen && document.fullscreenEnabled) {
+      try {
+        await el.requestFullscreen({ navigationUI: 'hide' })
+        await (screen.orientation as OrientationWithLock | undefined)?.lock?.('landscape').catch(() => undefined)
+        return
+      } catch {
+        /* refusé : on bascule en mode immersif */
+      }
+    }
+    setImmersive(true)
+  }, [stage])
+
+  const exit = useCallback(() => {
+    if (document.fullscreenElement) {
+      screen.orientation?.unlock?.()
+      void document.exitFullscreen()
+    }
+    setImmersive(false)
+  }, [])
+
+  const isFull = native || immersive
+  return { isFull, immersive, toggle: () => (isFull ? exit() : void enter()), exit }
+}
+
+/** Commandes posées sur l'image en plein écran : masquées après 3 s de lecture, réaffichées au toucher. */
+function useAutoHide(active: boolean, playing: boolean) {
+  const [visible, setVisible] = useState(true)
+  const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
+  const poke = useCallback(() => {
+    setVisible(true)
+    clearTimeout(timer.current)
+    if (playing) timer.current = setTimeout(() => setVisible(false), 3000)
+  }, [playing])
+  // La lecture démarre (ou reprend) en plein écran : on programme le masquage.
+  useEffect(() => {
+    if (!active || !playing) return
+    timer.current = setTimeout(() => setVisible(false), 3000)
+    return () => clearTimeout(timer.current)
+  }, [active, playing])
+  return { visible: !active || !playing || visible, poke }
 }
 
 export default function Lecteur() {
@@ -67,7 +124,7 @@ export default function Lecteur() {
   const yt = useYouTubePlayer(course?.youtubeId)
   const videoRef = useRef<HTMLVideoElement>(null)
   const stageRef = useRef<HTMLDivElement>(null)
-  const fullscreen = useFullscreen(stageRef, videoRef)
+  const fullscreen = useFullscreen(stageRef)
   const isYoutube = !!course?.youtubeId
   const hasVideo = isYoutube || !!course?.videoUrl
 
@@ -84,6 +141,12 @@ export default function Lecteur() {
   const ended = isYoutube ? yt.ended : fileEnded
   const progress = durationSec ? Math.min(1, currentSec / durationSec) : 0
   const started = currentSec > 0 || playing
+  const hud = useAutoHide(fullscreen.isFull, playing)
+  // Entrer en plein écran affiche d'abord les commandes, le temps de s'y repérer.
+  const toggleFullscreen = () => {
+    hud.poke()
+    fullscreen.toggle()
+  }
 
   // Nouvelle séance ouverte depuis « À suivre » : la page reste montée, on repart de zéro.
   useEffect(() => {
@@ -127,11 +190,11 @@ export default function Lecteur() {
         togglePlay()
       } else if (e.key === 'ArrowRight') seekTo(currentSec + 15)
       else if (e.key === 'ArrowLeft') seekTo(currentSec - 15)
-      else if (e.key === 'f') fullscreen.toggle()
+      else if (e.key === 'f') toggleFullscreen()
     }
     document.addEventListener('keydown', onKey)
     return () => document.removeEventListener('keydown', onKey)
-  }, [hasVideo, togglePlay, seekTo, currentSec, fullscreen])
+  }, [hasVideo, togglePlay, seekTo, currentSec, toggleFullscreen])
 
   const saveProgress = useMutation({
     mutationFn: (pct: number) => api.post('/api/progress', { courseId: id, progressPct: pct }),
@@ -183,7 +246,11 @@ export default function Lecteur() {
 
   return (
     <div className="player-screen">
-      <div className="player-stage" ref={stageRef}>
+      <div
+        className={`player-stage${fullscreen.isFull ? ' is-full' : ''}${fullscreen.immersive ? ' is-immersive' : ''}${hud.visible ? '' : ' hud-hidden'}`}
+        ref={stageRef}
+        onPointerMove={fullscreen.isFull ? hud.poke : undefined}
+      >
         {isYoutube ? (
           // Conteneur remplacé par le lecteur YouTube, piloté par useYouTubePlayer.
           <div ref={yt.containerRef} className="player-media yt-host" />
@@ -235,6 +302,60 @@ export default function Lecteur() {
               </>
             )}
           </div>
+        )}
+
+        {/* Bouton plein écran dans le coin de l'image, là où on le cherche. */}
+        {hasVideo && !fullscreen.isFull && (
+          <button type="button" className="player-icon-btn player-fs-corner" aria-label="Plein écran" onClick={toggleFullscreen}>
+            <IconExpand size={18} />
+          </button>
+        )}
+
+        {fullscreen.isFull && hasVideo && (
+          <>
+            {/* En lecture, un toucher sur l'image affiche les commandes au lieu de les traverser vers YouTube. */}
+            {playing && !hud.visible && (
+              <button type="button" className="player-tapzone" aria-label="Afficher les commandes" onClick={hud.poke} />
+            )}
+            <div className="player-hud" onPointerDown={hud.poke}>
+              <div className="player-hud-top">
+                <span className="player-hud-title">{course.title}</span>
+                <button type="button" className="player-icon-btn" aria-label="Quitter le plein écran" onClick={fullscreen.exit}>
+                  <IconShrink size={18} />
+                </button>
+              </div>
+              <div className="player-hud-bottom">
+                <input
+                  type="range"
+                  className="player-range on-dark"
+                  min={0}
+                  max={Math.max(1, Math.round(durationSec))}
+                  step={1}
+                  value={Math.round(currentSec)}
+                  aria-label="Position dans la vidéo"
+                  aria-valuetext={`${formatTime(currentSec)} sur ${formatTime(durationSec)}`}
+                  style={{ '--pct': `${progress * 100}%` } as React.CSSProperties}
+                  onChange={(e) => seekTo(Number(e.target.value))}
+                />
+                <div className="player-hud-row">
+                  <div className="player-hud-controls">
+                    <button type="button" className="player-hud-btn" aria-label="Reculer de 15 secondes" onClick={() => seekTo(currentSec - 15)}>
+                      <IconRewind15 size={28} />
+                    </button>
+                    <button type="button" className={`player-hud-play${playing ? ' is-playing' : ''}`} aria-label={playing ? 'Pause' : 'Lecture'} onClick={togglePlay}>
+                      {playing ? <IconPause size={22} /> : <IconPlay size={22} />}
+                    </button>
+                    <button type="button" className="player-hud-btn" aria-label="Avancer de 15 secondes" onClick={() => seekTo(currentSec + 15)}>
+                      <IconForward15 size={28} />
+                    </button>
+                  </div>
+                  <span className="player-hud-time">
+                    {formatTime(currentSec)} / {formatTime(durationSec)}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </>
         )}
 
         <div className="player-topbar">
@@ -317,12 +438,10 @@ export default function Lecteur() {
                   </button>
                 ))}
               </div>
-              {fullscreen.supported && (
-                <button type="button" className="player-fs" onClick={fullscreen.toggle} aria-label={fullscreen.isFull ? 'Quitter le plein écran' : 'Plein écran'}>
-                  {fullscreen.isFull ? <IconShrink size={18} /> : <IconExpand size={18} />}
-                  <span>{fullscreen.isFull ? 'Réduire' : 'Plein écran'}</span>
-                </button>
-              )}
+              <button type="button" className="player-fs" onClick={toggleFullscreen} aria-label={fullscreen.isFull ? 'Quitter le plein écran' : 'Plein écran'}>
+                {fullscreen.isFull ? <IconShrink size={18} /> : <IconExpand size={18} />}
+                <span>{fullscreen.isFull ? 'Réduire' : 'Plein écran'}</span>
+              </button>
             </div>
           </>
         )}
