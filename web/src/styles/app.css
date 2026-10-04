@@ -1229,15 +1229,135 @@
 /* Le lecteur YouTube remplace ce conteneur par son propre iframe. */
 .yt-host, .yt-host iframe { width: 100%; height: 100%; border: 0; display: block; }
 
-/* Actions sous les commandes du lecteur. */
-.player-action {
-  display: flex; flex-direction: column; align-items: center; gap: 6;
-  gap: 6px; font-size: 11.5px; font-family: inherit;
-  border: 0; background: none; color: inherit; cursor: pointer;
-  padding: 6px 10px; border-radius: 16px; min-width: 76px;
+/* ───────────────────────── Lecteur vidéo ─────────────────────────
+   Scène 16:9 pleine largeur (plein écran quand le téléphone est tourné),
+   puis un panneau clair : titre, barre de lecture, commandes, vitesse, à suivre. */
+.player-screen { display: flex; flex-direction: column; flex: 1; min-height: 0; background: var(--color-bg); }
+.player-stage {
+  position: relative; width: 100%; aspect-ratio: 16 / 9; max-height: 62vh; overflow: hidden;
+  background: #141210; flex: none;
 }
-.player-action:active { background: var(--color-neutral-200); }
-.player-action:disabled { opacity: .4; cursor: default; }
+.player-stage:fullscreen { max-height: none; aspect-ratio: auto; width: 100vw; height: 100vh; }
+.player-media { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; display: block; object-fit: contain; background: #000; }
+.player-poster { object-fit: cover; }
+
+.player-overlay {
+  position: absolute; inset: 0; z-index: 2; border: 0; padding: 0; cursor: pointer; overflow: hidden;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px;
+  background: transparent; color: #fff; font-family: inherit;
+}
+.player-overlay::after {
+  content: ""; position: absolute; inset: 0;
+  background: radial-gradient(circle at center, rgba(20, 18, 16, .12), rgba(20, 18, 16, .5));
+}
+.player-overlay-poster { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.player-overlay-btn {
+  position: relative; z-index: 1; width: 76px; height: 76px; border-radius: 999px; padding-left: 4px;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(255, 253, 249, .95); color: var(--color-accent-2-800); box-shadow: 0 10px 30px rgba(0, 0, 0, .3);
+  transition: transform .2s ease;
+}
+.player-overlay:hover .player-overlay-btn { transform: scale(1.06); }
+.player-overlay-label {
+  position: relative; z-index: 1; font-size: 13px; font-weight: 700; padding: 5px 12px; border-radius: 999px;
+  background: rgba(20, 18, 16, .5);
+}
+
+.player-locked {
+  position: absolute; inset: 0; z-index: 2; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 6px; padding: 20px 24px; text-align: center; color: #fff; font-size: 13.5px; line-height: 1.45;
+  background: rgba(20, 18, 16, .62); -webkit-backdrop-filter: blur(4px); backdrop-filter: blur(4px);
+}
+.player-locked strong { font-size: 16px; }
+.player-locked .btn { margin-top: 8px; }
+.player-locked-icon {
+  width: 48px; height: 48px; border-radius: 999px; display: flex; align-items: center; justify-content: center; margin-bottom: 4px;
+  background: var(--color-accent-600); color: #fff;
+}
+
+.player-topbar {
+  position: absolute; top: 0; left: 0; right: 0; z-index: 3; display: flex; justify-content: space-between;
+  padding: calc(12px + env(safe-area-inset-top, 0px)) 14px 0; pointer-events: none;
+}
+.player-topbar > * { pointer-events: auto; }
+.player-icon-btn {
+  width: 42px; height: 42px; border-radius: 999px; border: 0; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(20, 18, 16, .45); color: #fff; -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);
+  transition: background .15s ease;
+}
+.player-icon-btn:hover { background: rgba(20, 18, 16, .65); }
+.player-icon-btn.fav-on { color: var(--color-accent-300); }
+
+.player-panel { display: flex; flex-direction: column; gap: 20px; padding: 22px 20px calc(28px + env(safe-area-inset-bottom, 0px)); }
+.player-universe {
+  display: inline-block; font-size: 12.5px; font-weight: 700; text-decoration: none;
+  padding: 4px 11px; border-radius: 999px; background: var(--color-accent-2-100); color: var(--color-accent-2-800);
+}
+.player-title { font-size: 24px; line-height: 1.2; margin: 10px 0 6px; }
+.player-meta { font-size: 13.5px; color: var(--color-neutral-700); }
+
+/* Barre de lecture : un vrai curseur (glisser au doigt, flèches au clavier). */
+.player-range { -webkit-appearance: none; appearance: none; width: 100%; height: 24px; margin: 0; background: transparent; cursor: pointer; }
+.player-range::-webkit-slider-runnable-track {
+  height: 6px; border-radius: 999px;
+  background: linear-gradient(to right, var(--color-accent-2-600) var(--pct, 0%), var(--color-neutral-300) var(--pct, 0%));
+}
+.player-range::-webkit-slider-thumb {
+  -webkit-appearance: none; appearance: none; width: 18px; height: 18px; margin-top: -6px; border-radius: 999px;
+  background: var(--color-accent-2-700); border: 3px solid #fff; box-shadow: 0 1px 4px rgba(0, 0, 0, .25);
+}
+.player-range::-moz-range-track { height: 6px; border-radius: 999px; background: var(--color-neutral-300); }
+.player-range::-moz-range-progress { height: 6px; border-radius: 999px; background: var(--color-accent-2-600); }
+.player-range::-moz-range-thumb {
+  width: 14px; height: 14px; border-radius: 999px; background: var(--color-accent-2-700); border: 3px solid #fff;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, .25);
+}
+.player-range:focus-visible { outline: none; }
+.player-range:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 4px color-mix(in srgb, var(--color-accent-500) 40%, transparent); }
+.player-times {
+  display: flex; justify-content: space-between; margin-top: 2px;
+  font-size: 12.5px; font-weight: 600; color: var(--color-neutral-700); font-variant-numeric: tabular-nums;
+}
+
+.player-controls { display: flex; align-items: center; justify-content: center; gap: 34px; }
+.player-skip {
+  width: 54px; height: 54px; border-radius: 999px; border: 0; background: transparent; color: var(--color-text);
+  display: flex; align-items: center; justify-content: center; cursor: pointer; transition: background .15s ease;
+}
+.player-skip:hover { background: var(--color-neutral-200); }
+.player-play {
+  width: 76px; height: 76px; border-radius: 999px; border: 0; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--color-accent-2-700); color: #fff; box-shadow: var(--shadow-md);
+  transition: background .15s ease, transform .15s ease;
+}
+.player-play:hover { background: var(--color-accent-2-800); }
+.player-play:active { transform: scale(.96); }
+
+.player-options { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.player-speed { display: inline-flex; gap: 4px; padding: 4px; border-radius: 999px; background: var(--color-neutral-200); }
+.player-speed button {
+  min-height: 36px; min-width: 50px; padding: 0 10px; border: 0; border-radius: 999px; cursor: pointer; background: none;
+  font: 600 13px/1 var(--font-body); color: var(--color-neutral-800); font-variant-numeric: tabular-nums;
+  transition: background .15s ease;
+}
+.player-speed button.active { background: var(--color-neutral-100); color: var(--color-text); box-shadow: var(--shadow-sm); }
+.player-fs {
+  display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 16px; border-radius: 999px; cursor: pointer;
+  border: 1px solid var(--color-divider); background: var(--color-neutral-100); color: var(--color-text);
+  font: 600 13.5px/1 var(--font-body); transition: background .15s ease;
+}
+.player-fs:hover { background: var(--color-neutral-200); }
+.player-next { margin-top: 4px; }
+
+/* Téléphone tourné : la vidéo occupe tout l'écran, le panneau reste accessible en faisant défiler. */
+@media (orientation: landscape) and (max-height: 500px) {
+  .player-stage { aspect-ratio: auto; height: 100vh; height: 100dvh; max-height: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .player-overlay-btn, .player-play { transition: none; }
+}
 
 /* ───────────────────────── Tablette ─────────────────────────
    La colonne s'élargit et les grilles gagnent des colonnes ; la navigation
@@ -1303,7 +1423,18 @@
   .toast { left: calc(50% + 118px); bottom: 32px; }
 
   /* Le lecteur et les tunnels occupent l'écran, centrés. */
-  .player-screen { max-width: 980px; margin-inline: auto; width: 100%; }
+  /* Lecteur : vidéo arrondie en grand, commandes à gauche, « À suivre » à droite. */
+  .player-screen { max-width: 1180px; margin-inline: auto; width: 100%; padding: 24px 32px 0; }
+  .player-stage { border-radius: 24px; max-height: 68vh; box-shadow: var(--shadow-lg); }
+  .player-stage:fullscreen { border-radius: 0; }
+  .player-panel {
+    display: grid; grid-template-columns: minmax(0, 1fr) 380px; column-gap: 44px; row-gap: 20px;
+    align-items: start; padding: 26px 0 40px;
+  }
+  .player-panel > * { grid-column: 1; }
+  .player-panel > .player-next { grid-column: 2; grid-row: 1 / span 5; margin-top: 0; }
+  .player-title { font-size: 30px; }
+  .player-controls { justify-content: flex-start; }
   .app-main:has(> .app-sheet-page) .sheet { padding-bottom: 40px; }
   .app-sheet-page { max-width: 880px; margin-inline: auto; width: 100%; }
 

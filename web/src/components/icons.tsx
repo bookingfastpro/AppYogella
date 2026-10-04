@@ -225,6 +225,16 @@ export const IconLogOut = (p: IconProps) => (
     <path d="m9 8-4 4 4 4M5 12h11" />
   </Svg>
 )
+export const IconExpand = (p: IconProps) => (
+  <Svg {...p} strokeWidth={p.strokeWidth ?? 2.4}>
+    <path d="M4 9V5a1 1 0 0 1 1-1h4M15 4h4a1 1 0 0 1 1 1v4M20 15v4a1 1 0 0 1-1 1h-4M9 20H5a1 1 0 0 1-1-1v-4" />
+  </Svg>
+)
+export const IconShrink = (p: IconProps) => (
+  <Svg {...p} strokeWidth={p.strokeWidth ?? 2.4}>
+    <path d="M9 4v4a1 1 0 0 1-1 1H4M20 9h-4a1 1 0 0 1-1-1V4M15 20v-4a1 1 0 0 1 1-1h4M4 15h4a1 1 0 0 1 1 1v4" />
+  </Svg>
+)
 export const IconMenu = (p: IconProps) => (
   <Svg {...p} strokeWidth={p.strokeWidth ?? 2.6}>
     <path d="M3 6h18M6 12h12M10 18h4" />

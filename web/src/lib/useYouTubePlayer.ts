@@ -57,6 +57,7 @@ export function useYouTubePlayer(videoId: string | null | undefined) {
   const [playing, setPlaying] = useState(false)
   const [currentTime, setCurrentTime] = useState(0)
   const [duration, setDuration] = useState(0)
+  const [ended, setEnded] = useState(false)
 
   useEffect(() => {
     if (!videoId || !containerRef.current) return
@@ -70,7 +71,11 @@ export function useYouTubePlayer(videoId: string | null | undefined) {
       playerRef.current = new window.YT.Player(mount, {
         videoId,
         // playsinline : sans lui, iOS passe en plein écran natif dès la lecture.
-        playerVars: { playsinline: 1, rel: 0, modestbranding: 1 },
+        // controls: 0 — ce sont les commandes de l'application qui pilotent la
+        // vidéo ; afficher aussi celles de YouTube créait un doublon confus.
+        // iv_load_policy: 3 masque les annotations, disablekb laisse le clavier
+        // aux raccourcis de la page.
+        playerVars: { playsinline: 1, rel: 0, modestbranding: 1, controls: 0, iv_load_policy: 3, disablekb: 1, fs: 0 },
         events: {
           onReady: (e: { target: YTPlayer }) => {
             if (cancelled) return
@@ -80,6 +85,8 @@ export function useYouTubePlayer(videoId: string | null | undefined) {
           onStateChange: (e: { data: number; target: YTPlayer }) => {
             if (cancelled || !window.YT) return
             setPlaying(e.data === window.YT.PlayerState.PLAYING)
+            setEnded(e.data === window.YT.PlayerState.ENDED)
+            if (e.data === window.YT.PlayerState.ENDED) setCurrentTime(e.target.getDuration())
             const d = e.target.getDuration()
             if (d) setDuration(d)
           },
@@ -110,6 +117,7 @@ export function useYouTubePlayer(videoId: string | null | undefined) {
     containerRef,
     ready,
     playing,
+    ended,
     currentTime,
     duration,
     toggle: () => (playing ? playerRef.current?.pauseVideo() : playerRef.current?.playVideo()),
