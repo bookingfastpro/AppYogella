@@ -90,7 +90,7 @@ export default function Categorie() {
             </div>
           )}
         </div>
-        <button className="btn btn-block" style={{ width: '100%', marginTop: 14 }} onClick={() => navigate('/recherche')}>
+        <button type="button" className="btn btn-secondary btn-block" style={{ marginTop: 14 }} onClick={() => navigate('/recherche')}>
           Voir tout
         </button>
       </div>

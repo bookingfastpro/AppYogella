@@ -107,7 +107,7 @@ export default function Profil() {
         ))}
       </nav>
 
-      <button type="button" className="logout-btn" onClick={() => logout().then(() => navigate('/login'))}>
+      <button type="button" className="btn btn-danger btn-block" onClick={() => logout().then(() => navigate('/login'))}>
         <IconLogOut size={18} />
         Se déconnecter
       </button>

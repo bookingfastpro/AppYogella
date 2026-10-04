@@ -1,7 +1,7 @@
 import { useNavigate, useParams } from 'react-router-dom'
 import { useProgram } from '../lib/hooks'
 import { useGatedOpen } from '../lib/useGatedOpen'
-import { IconChevronLeft } from '../components/icons'
+import { IconChevronLeft, IconPlay } from '../components/icons'
 import { CourseRow } from '../components/CourseRow'
 import heroPhoto from '../assets/course-photo.webp'
 import { Loader } from '../components/Loader'
@@ -48,11 +48,8 @@ export default function Programme() {
           )}
         </div>
         {nextSession && (
-          <button
-            className="btn"
-            style={{ background: 'var(--color-accent-2-700)', color: '#fff', padding: 14, fontSize: 15, width: '100%' }}
-            onClick={() => open(nextSession)}
-          >
+          <button type="button" className="btn btn-sage btn-lg btn-block" onClick={() => open(nextSession)}>
+            <IconPlay size={17} />
             {program.sessions.some((s) => s.done) ? `Reprendre la séance ${nextSession.order}` : 'Commencer le programme'}
           </button>
         )}

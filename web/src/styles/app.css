@@ -27,13 +27,18 @@
 .screen-header { display: flex; align-items: center; gap: 12px; padding: 0 20px; }
 .screen-header h1 { font-size: 21px; margin: 0; }
 
+/* Bouton rond à icône (retour, fermer, favori) : 40px, réaction au toucher. */
 .icon-btn {
-  width: 36px; height: 36px; border-radius: 999px; border: 1px solid var(--color-divider);
+  width: 40px; height: 40px; border-radius: 999px; border: 1px solid var(--color-divider);
   background: var(--color-neutral-100); display: flex; align-items: center; justify-content: center;
-  cursor: pointer; flex: none; color: var(--color-text);
+  cursor: pointer; flex: none; color: var(--color-text); -webkit-tap-highlight-color: transparent;
+  transition: background-color .18s ease, border-color .18s ease, transform .12s ease, box-shadow .18s ease;
 }
-.icon-btn.floating { border: 0; background: rgba(255, 253, 249, .92); }
-.icon-btn:hover { background: var(--color-accent-100); }
+.icon-btn.floating { border: 0; background: rgba(255, 253, 249, .92); box-shadow: var(--shadow-md); }
+.icon-btn:hover { background: var(--color-neutral-200); border-color: var(--color-neutral-400); }
+.icon-btn:active { transform: scale(.93); }
+.icon-btn:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--color-bg), 0 0 0 5px var(--color-accent-500); }
+@media (prefers-reduced-motion: reduce) { .icon-btn:active { transform: none; } }
 
 .brand { font-family: var(--font-heading); font-size: 26px; color: var(--color-accent-700); }
 
@@ -213,18 +218,66 @@
 .ui-list { display: flex; flex-direction: column; gap: 6px; }
 .ui-result-count { font-size: 13px; font-weight: 600; color: var(--color-neutral-700); margin-top: -8px; }
 
-.ui-btn-primary {
-  display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 48px; padding: 0 22px;
-  background: var(--color-accent-700); color: #fff; border: 0; font-size: 14.5px; text-decoration: none;
-  transition: background .15s ease;
+/* Alias historiques du système de boutons (tokens.css) : mêmes rendus que
+   .btn-primary et .btn-secondary, pour que tous les écrans restent cohérents. */
+.ui-btn-primary, .adm-btn-primary {
+  background: var(--color-accent-700); border-color: transparent; color: #fff;
+  box-shadow: 0 8px 18px -8px color-mix(in srgb, var(--color-accent-700) 70%, transparent);
 }
-.ui-btn-primary:hover:not(:disabled) { background: var(--color-accent-800); }
-.ui-btn-soft {
-  display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 46px; padding: 0 20px;
-  background: var(--color-neutral-100); border: 1px solid var(--color-divider); color: var(--color-text); font-size: 14px;
-  transition: background .15s ease;
+.ui-btn-primary:hover:not(:disabled), .adm-btn-primary:hover:not(:disabled) {
+  background: var(--color-accent-800); color: #fff;
+  box-shadow: 0 10px 22px -8px color-mix(in srgb, var(--color-accent-800) 75%, transparent);
 }
-.ui-btn-soft:hover:not(:disabled) { background: var(--color-neutral-200); }
+.ui-btn-soft { background: var(--color-neutral-100); border-color: var(--color-divider); }
+.ui-btn-soft:hover:not(:disabled) { background: var(--color-neutral-200); border-color: var(--color-neutral-400); }
+
+/* Paywall : formules en boutons radio, la sélection est évidente au premier regard. */
+.plan-options { display: flex; flex-direction: column; gap: 10px; }
+.plan-option {
+  display: flex; align-items: center; gap: 14px; width: 100%; padding: 16px 18px; border-radius: 22px; cursor: pointer;
+  border: 2px solid var(--color-divider); background: var(--color-neutral-100); color: inherit; text-align: left; font-family: inherit;
+  -webkit-tap-highlight-color: transparent;
+  transition: border-color .18s ease, background-color .18s ease, box-shadow .18s ease, transform .12s ease;
+}
+.plan-option:hover { border-color: var(--color-neutral-400); }
+.plan-option:active { transform: scale(.985); }
+.plan-option.selected {
+  border-color: var(--color-accent-500); background: var(--color-accent-100);
+  box-shadow: 0 8px 20px -10px color-mix(in srgb, var(--color-accent-600) 55%, transparent);
+}
+.plan-option:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--color-bg), 0 0 0 5px var(--color-accent-500); }
+.plan-radio {
+  position: relative; width: 22px; height: 22px; flex: none; border-radius: 999px; border: 2px solid var(--color-neutral-400);
+  transition: border-color .18s ease;
+}
+.plan-option.selected .plan-radio { border-color: var(--color-accent-600); }
+.plan-option.selected .plan-radio::after {
+  content: ""; position: absolute; inset: 3px; border-radius: 999px; background: var(--color-accent-600);
+}
+.plan-name { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; font-size: 15.5px; font-weight: 700; }
+.plan-save {
+  font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 999px;
+  background: var(--color-accent-2-200); color: var(--color-accent-2-800);
+}
+.plan-note { display: block; font-size: 12.5px; color: var(--color-neutral-700); margin-top: 2px; }
+.plan-price { font-family: var(--font-heading); font-size: 21px; white-space: nowrap; }
+
+/* Petits boutons : même réaction au toucher et même focus clavier que .btn. */
+.pill, .adm-chip, .adm-text-btn, .player-speed button, .adm-segmented button, .adm-mood, .row-action, .menu-row, .mood-btn {
+  -webkit-tap-highlight-color: transparent;
+}
+.pill:active, .adm-chip:active, .adm-text-btn:active:not(:disabled), .adm-mood:active, .row-action:active, .player-skip:active { transform: scale(.95); }
+.pill { transition: background-color .18s ease, color .18s ease, transform .12s ease; }
+.row-action { transition: background-color .15s ease, color .15s ease, transform .12s ease; }
+.pill:focus-visible, .adm-chip:focus-visible, .adm-text-btn:focus-visible, .row-action:focus-visible, .menu-row:focus-visible,
+.mood-btn:focus-visible, .player-skip:focus-visible, .player-play:focus-visible, .player-fs:focus-visible, .player-icon-btn:focus-visible,
+.player-speed button:focus-visible, .auth-hero-cta:focus-visible, .srow-cta:focus-visible {
+  outline: none; box-shadow: 0 0 0 3px var(--color-bg), 0 0 0 5px var(--color-accent-500);
+}
+.auth-hero-cta:focus-visible { box-shadow: 0 0 0 3px rgba(0, 0, 0, .35), 0 0 0 5px #fff; }
+@media (prefers-reduced-motion: reduce) {
+  .pill:active, .adm-chip:active, .adm-text-btn:active, .adm-mood:active, .row-action:active, .player-skip:active, .plan-option:active { transform: none; }
+}
 
 /* Recherche : champ + filtres restent accessibles en faisant défiler les résultats. */
 .ui-sticky-search {
@@ -569,12 +622,6 @@
   background: var(--color-accent-2-100); color: var(--color-accent-2-700);
 }
 .menu-label { flex: 1; font-size: 15px; font-weight: 600; }
-.logout-btn {
-  display: flex; align-items: center; justify-content: center; gap: 9px; min-height: 50px; border-radius: 999px; cursor: pointer;
-  border: 1px solid color-mix(in srgb, #9a3220 32%, transparent); background: transparent; color: #9a3220;
-  font: 600 14.5px/1 var(--font-body); transition: background .15s ease;
-}
-.logout-btn:hover { background: #f8ddd6; }
 
 /* Article */
 .article-top { display: flex; align-items: center; justify-content: space-between; }
@@ -761,12 +808,6 @@
 .adm-page-title { font-size: 26px; margin: 0; }
 .adm-page-desc { margin: 4px 0 0; font-size: 13.5px; line-height: 1.5; color: var(--color-neutral-700); max-width: 60ch; }
 
-.adm-btn-primary {
-  display: inline-flex; align-items: center; justify-content: center; gap: 7px; min-height: 44px; padding: 0 18px;
-  background: var(--adm-primary); color: #fff; border: 0; font-size: 14px; cursor: pointer;
-  transition: background .15s ease;
-}
-.adm-btn-primary:hover:not(:disabled) { background: var(--adm-primary-hover); }
 
 /* Chiffres clés */
 .adm-stats { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }

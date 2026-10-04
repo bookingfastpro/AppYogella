@@ -43,7 +43,7 @@ export default function Humeur() {
             </div>
           )}
         </div>
-        <button className="btn btn-block" style={{ width: '100%', marginTop: 14 }} onClick={() => navigate('/explorer')}>
+        <button type="button" className="btn btn-secondary btn-block" style={{ marginTop: 14 }} onClick={() => navigate('/explorer')}>
           Explorer tous les univers
         </button>
       </div>

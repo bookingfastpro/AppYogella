@@ -36,11 +36,7 @@ export default function Paywall() {
   return (
     <div className="screen" style={{ padding: '6px 22px 30px', minHeight: '100%' }}>
       <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-        <button
-          className="icon-btn"
-          style={{ width: 34, height: 34, background: 'var(--color-neutral-200)', border: 0 }}
-          onClick={() => navigate(-1)}
-        >
+        <button type="button" className="icon-btn" aria-label="Fermer" onClick={() => navigate(-1)}>
           <IconX size={16} />
         </button>
       </div>
@@ -60,33 +56,25 @@ export default function Paywall() {
           Tous les cours, programmes et auto-massages, sans limite et hors connexion.
         </p>
       </div>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 9 }}>
+      <div className="plan-options" role="radiogroup" aria-label="Formule d'abonnement">
         {plans.map((p) => (
           <button
             key={p.key}
+            type="button"
+            role="radio"
+            aria-checked={plan === p.key}
+            className={`plan-option${plan === p.key ? ' selected' : ''}`}
             onClick={() => setPlan(p.key)}
-            style={{
-              display: 'flex', alignItems: 'center', gap: 13, padding: '16px 18px', borderRadius: 26, cursor: 'pointer',
-              background: plan === p.key ? 'var(--color-accent-100)' : 'var(--color-neutral-100)',
-              border: `2px solid ${plan === p.key ? 'var(--color-accent-500)' : 'var(--color-divider)'}`,
-              textAlign: 'left', fontFamily: 'inherit', color: 'inherit',
-            }}
           >
-            <span
-              style={{
-                width: 22, height: 22, borderRadius: 999, border: `2px solid ${plan === p.key ? 'var(--color-accent-500)' : 'var(--color-divider)'}`,
-                display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none',
-              }}
-            >
-              {plan === p.key && <span style={{ width: 11, height: 11, borderRadius: 999, background: 'var(--color-accent-600)' }} />}
+            <span className="plan-radio" aria-hidden="true" />
+            <span style={{ flex: 1 }}>
+              <span className="plan-name">
+                {p.title}
+                {p.key === 'ANNUAL' && <span className="plan-save">2 mois offerts</span>}
+              </span>
+              <span className="plan-note">Sans engagement</span>
             </span>
-            <div style={{ flex: 1 }}>
-              <div style={{ fontSize: 15, fontWeight: 700 }}>{p.title}</div>
-              <div className="text-muted" style={{ fontSize: 12.5, marginTop: 2 }}>
-                {p.key === 'ANNUAL' ? 'Sans engagement · 2 mois offerts' : 'Sans engagement'}
-              </div>
-            </div>
-            <div style={{ fontFamily: 'var(--font-heading)', fontSize: 20 }}>{p.price}</div>
+            <span className="plan-price">{p.price}</span>
           </button>
         ))}
       </div>
@@ -99,12 +87,16 @@ export default function Paywall() {
         ))}
       </div>
       <button
-        className="btn btn-primary"
-        style={{ padding: 15, fontSize: 15, width: '100%' }}
+        type="button"
+        className="btn btn-primary btn-lg btn-block"
         disabled={checkout.isPending || !selected}
         onClick={() => checkout.mutate()}
       >
-        {selected ? `Continuer — ${selected.price} / ${plan === 'ANNUAL' ? 'an' : 'mois'}` : 'Continuer'}
+        {checkout.isPending
+          ? 'Redirection vers le paiement…'
+          : selected
+          ? `Continuer — ${selected.price} / ${plan === 'ANNUAL' ? 'an' : 'mois'}`
+          : 'Continuer'}
       </button>
       <div style={{ textAlign: 'center', fontSize: 11.5, color: 'var(--color-neutral-600)', lineHeight: 1.5 }}>
         Sans engagement, résiliable à tout moment.

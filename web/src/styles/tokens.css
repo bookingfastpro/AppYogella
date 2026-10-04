@@ -101,19 +101,54 @@ button, input, select, textarea { font-family: var(--font-body); }
 
 .washed { filter: saturate(0.6) contrast(0.85) brightness(1.1) opacity(0.94); }
 
-/* — buttons — */
+/* — buttons —
+   Un seul système pour toute l'application :
+   variantes  .btn-primary (terracotta, action principale) · .btn-sage (lancer une séance)
+              .btn-secondary (action alternative) · .btn-ghost (lien d'action) · .btn-danger
+   tailles    .btn-sm (38px) · défaut (46px) · .btn-lg (54px) · .btn-block (pleine largeur)
+   États communs : survol, enfoncement au toucher, anneau de focus clavier, désactivé. */
 .btn {
-  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
-  cursor: pointer; text-decoration: none; border: 1px solid transparent;
-  font-family: var(--font-body); font-weight: 600; font-size: 14px; line-height: 1.2;
-  color: var(--color-text); background: var(--color-neutral-100);
-  padding: 12px 18px; border-radius: 999px; transition: background .15s ease;
+  position: relative; display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  min-height: 46px; padding: 0 22px; border-radius: 999px; border: 1px solid var(--color-divider);
+  background: var(--color-neutral-100); color: var(--color-text);
+  font-family: var(--font-body); font-weight: 600; font-size: 14.5px; line-height: 1.2; letter-spacing: .005em;
+  text-decoration: none; white-space: nowrap; cursor: pointer; user-select: none; -webkit-tap-highlight-color: transparent;
+  transition: background-color .18s ease, border-color .18s ease, color .18s ease, box-shadow .18s ease, transform .12s ease;
 }
-.btn:disabled { opacity: 0.5; cursor: not-allowed; }
-.btn-primary { background: var(--color-accent-600); color: #fff; }
-.btn-primary:hover { background: var(--color-accent-700); }
-.btn-secondary { border-color: var(--color-divider); background: var(--color-surface); }
-.btn-ghost { background: none; border: 0; color: var(--color-accent-700); padding-inline: 4px; }
+.btn svg { flex: none; }
+.btn:hover:not(:disabled) { background: var(--color-neutral-200); color: var(--color-text); }
+.btn:active:not(:disabled) { transform: scale(.97); }
+.btn:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--color-bg), 0 0 0 5px var(--color-accent-500); }
+.btn:disabled, .btn[aria-disabled="true"] { opacity: .5; cursor: not-allowed; box-shadow: none; }
+
+.btn-primary {
+  background: var(--color-accent-700); border-color: transparent; color: #fff;
+  box-shadow: 0 8px 18px -8px color-mix(in srgb, var(--color-accent-700) 70%, transparent);
+}
+.btn-primary:hover:not(:disabled) {
+  background: var(--color-accent-800); color: #fff;
+  box-shadow: 0 10px 22px -8px color-mix(in srgb, var(--color-accent-800) 75%, transparent);
+}
+.btn-sage {
+  background: var(--color-accent-2-700); border-color: transparent; color: #fff;
+  box-shadow: 0 8px 18px -8px color-mix(in srgb, var(--color-accent-2-700) 70%, transparent);
+}
+.btn-sage:hover:not(:disabled) { background: var(--color-accent-2-800); color: #fff; }
+.btn-secondary { background: var(--color-neutral-100); border-color: var(--color-divider); }
+.btn-secondary:hover:not(:disabled) { background: var(--color-neutral-200); border-color: var(--color-neutral-400); }
+.btn-ghost { background: transparent; border-color: transparent; color: var(--color-accent-700); min-height: 40px; padding: 0 12px; }
+.btn-ghost:hover:not(:disabled) { background: var(--color-accent-100); color: var(--color-accent-800); }
+.btn-danger { background: transparent; border-color: color-mix(in srgb, #9a3220 32%, transparent); color: #9a3220; }
+.btn-danger:hover:not(:disabled) { background: #f8ddd6; color: #8a2c1b; border-color: color-mix(in srgb, #9a3220 45%, transparent); }
+
+.btn-sm { min-height: 38px; padding: 0 15px; font-size: 13px; gap: 6px; }
+.btn-lg { min-height: 54px; padding: 0 28px; font-size: 15.5px; }
+.btn-block { display: flex; width: 100%; }
+
+@media (prefers-reduced-motion: reduce) {
+  .btn { transition: none; }
+  .btn:active:not(:disabled) { transform: none; }
+}
 
 /* — forms — */
 .input {
