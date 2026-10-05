@@ -48,7 +48,7 @@ export default function Programme() {
           )}
         </div>
         {nextSession && (
-          <button type="button" className="btn btn-sage btn-lg btn-block" onClick={() => open(nextSession)}>
+          <button type="button" className="btn btn-primary btn-lg btn-block" onClick={() => open(nextSession)}>
             <IconPlay size={17} />
             {program.sessions.some((s) => s.done) ? `Reprendre la séance ${nextSession.order}` : 'Commencer le programme'}
           </button>
