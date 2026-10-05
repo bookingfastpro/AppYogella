@@ -15,6 +15,9 @@ export function EditSheet({
   onSave,
   saving,
   submitLabel = 'Enregistrer',
+  savingLabel = 'Enregistrement…',
+  closeLabel = 'Annuler',
+  danger = false,
   children,
 }: {
   title: string
@@ -23,6 +26,11 @@ export function EditSheet({
   onSave: () => void
   saving?: boolean
   submitLabel?: string
+  savingLabel?: string
+  /** Libellé du bouton qui ferme la feuille sans rien faire. */
+  closeLabel?: string
+  /** Action destructive (annuler une réservation…) : bouton de validation en rouge. */
+  danger?: boolean
   children: ReactNode
 }) {
   const titleId = useId()
@@ -69,10 +77,10 @@ export function EditSheet({
         {children}
         <div className="adm-sheet-actions">
           <button type="button" className="btn btn-secondary" onClick={onClose}>
-            Annuler
+            {closeLabel}
           </button>
-          <button type="submit" className="btn adm-btn-primary" disabled={saving}>
-            {saving ? 'Enregistrement…' : submitLabel}
+          <button type="submit" className={`btn ${danger ? 'btn-danger' : 'adm-btn-primary'}`} disabled={saving}>
+            {saving ? savingLabel : submitLabel}
           </button>
         </div>
       </form>

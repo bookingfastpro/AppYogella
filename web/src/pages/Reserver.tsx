@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import { EditSheet } from '../components/AdminEdit'
 import { EmptyState, PageHeader, SectionTitle } from '../components/ui'
-import { IconCalendar, IconCheck, IconClock, IconMapPin, IconUser } from '../components/icons'
+import { IconCalendar, IconCheck, IconChevronRight, IconClock, IconMapPin, IconUser } from '../components/icons'
 import { Loader } from '../components/Loader'
 import { useToast } from '../lib/ToastContext'
 import { ApiError } from '../lib/api'
@@ -31,11 +31,43 @@ function availability(s: ClassSession) {
   return { label: `${s.remaining} places disponibles`, tone: 'ok' }
 }
 
+/** Détail d'un cours : date, horaires, lieu, professeure, description. */
+function ClassFacts({ session: s, showCapacity = false }: { session: ClassSession; showCapacity?: boolean }) {
+  const a = availability(s)
+  return (
+    <div className="confirm-class">
+      <div className="confirm-class-title">{s.title}</div>
+      <ul className="confirm-class-facts">
+        <li>
+          <IconCalendar size={16} /> {capitalize(formatDayLong(s.day))}
+        </li>
+        <li>
+          <IconClock size={16} /> {s.startTime} – {s.endTime} ({s.durationMin} min)
+        </li>
+        {s.location && (
+          <li>
+            <IconMapPin size={16} /> {s.location}
+          </li>
+        )}
+        {s.instructor && (
+          <li>
+            <IconUser size={16} /> avec {s.instructor}
+            {s.level ? ` · ${s.level}` : ''}
+          </li>
+        )}
+      </ul>
+      {s.description && <p className="confirm-class-desc">{s.description}</p>}
+      {showCapacity && <div className={`class-capacity ${a.tone}`}>{a.label}</div>}
+    </div>
+  )
+}
+
 export default function Reserver() {
   const today = parisToday()
   const lastDay = addDays(today, DAYS_AHEAD - 1)
   const [day, setDay] = useState(today)
   const [confirming, setConfirming] = useState<ClassSession | null>(null)
+  const [viewing, setViewing] = useState<ClassSession | null>(null)
   const { data: sessions, isPending } = useClasses(today, lastDay)
   const { data: mine } = useMyClasses()
   const { book, cancel } = useBooking()
@@ -61,11 +93,12 @@ export default function Reserver() {
     }
   }
 
-  async function cancelBooking(s: ClassSession) {
-    if (!window.confirm(`Annuler ta réservation pour « ${s.title} » (${relativeDay(s.day)} à ${s.startTime}) ?`)) return
+  async function cancelBooking(s: ClassSession, confirmed = false) {
+    if (!confirmed && !window.confirm(`Annuler ta réservation pour « ${s.title} » (${relativeDay(s.day)} à ${s.startTime}) ?`)) return
     try {
       await cancel.mutateAsync(s.id)
       flash('Réservation annulée')
+      setViewing(null)
     } catch (err) {
       flash(err instanceof ApiError ? err.message : 'Annulation impossible')
     }
@@ -109,7 +142,7 @@ export default function Reserver() {
             text="Les cours au studio apparaîtront ici dès qu'ils sont planifiés."
             action={
               nextDayWithClasses && (
-                <button type="button" className="btn btn-secondary" onClick={() => setDay(nextDayWithClasses)}>
+                <button type="button" className="btn btn-primary btn-block" onClick={() => setDay(nextDayWithClasses)}>
                   Voir le prochain cours · {formatDayShort(nextDayWithClasses)}
                 </button>
               )
@@ -186,27 +219,25 @@ export default function Reserver() {
       {mine && mine.length > 0 && (
         <section>
           <SectionTitle title="Mes réservations" aside={<span className="ui-count">{mine.length}</span>} />
-          <div className="booking-rail">
+          <div className="booking-list">
             {mine.map((s) => (
-              <article key={s.id} className={`booking-card${s.cancelled ? ' cancelled' : ''}`}>
-                <div className="booking-when">
-                  <span className="booking-day">{relativeDay(s.day)}</span>
+              <button
+                key={s.id}
+                type="button"
+                className={`booking-card${s.cancelled ? ' cancelled' : ''}`}
+                aria-label={`${s.title}, ${formatDayLong(s.day)} à ${s.startTime}${s.cancelled ? ', annulé par le studio' : ''} : voir le détail`}
+                onClick={() => setViewing(s)}
+              >
+                <span className="booking-main" aria-hidden="true">
+                  <span className="booking-day">{capitalize(formatDayLong(s.day))}</span>
+                  <span className="booking-title">{s.title}</span>
+                  {s.cancelled && <span className="class-badge off">Annulé par le studio</span>}
+                </span>
+                <span className="booking-side" aria-hidden="true">
                   <span className="booking-time">{s.startTime}</span>
-                </div>
-                <div className="booking-title">{s.title}</div>
-                {s.location && (
-                  <div className="booking-meta">
-                    <IconMapPin size={13} /> {s.location}
-                  </div>
-                )}
-                {s.cancelled ? (
-                  <span className="class-badge off">Annulé par le studio</span>
-                ) : (
-                  <button type="button" className="btn btn-ghost btn-sm booking-cancel" onClick={() => cancelBooking(s)}>
-                    Annuler
-                  </button>
-                )}
-              </article>
+                  <IconChevronRight size={18} className="booking-chevron" />
+                </span>
+              </button>
             ))}
           </div>
         </section>
@@ -221,30 +252,23 @@ export default function Reserver() {
           saving={book.isPending}
           submitLabel="Confirmer ma réservation"
         >
-          <div className="confirm-class">
-            <div className="confirm-class-title">{confirming.title}</div>
-            <ul className="confirm-class-facts">
-              <li>
-                <IconCalendar size={16} /> {capitalize(formatDayLong(confirming.day))}
-              </li>
-              <li>
-                <IconClock size={16} /> {confirming.startTime} – {confirming.endTime} ({confirming.durationMin} min)
-              </li>
-              {confirming.location && (
-                <li>
-                  <IconMapPin size={16} /> {confirming.location}
-                </li>
-              )}
-              {confirming.instructor && (
-                <li>
-                  <IconUser size={16} /> avec {confirming.instructor}
-                  {confirming.level ? ` · ${confirming.level}` : ''}
-                </li>
-              )}
-            </ul>
-            {confirming.description && <p className="confirm-class-desc">{confirming.description}</p>}
-            <div className={`class-capacity ${availability(confirming).tone}`}>{availability(confirming).label}</div>
-          </div>
+          <ClassFacts session={confirming} showCapacity />
+        </EditSheet>
+      )}
+
+      {viewing && (
+        <EditSheet
+          title="Ta réservation"
+          description={viewing.cancelled ? 'Ce cours a été annulé par le studio.' : 'Tu ne peux plus venir ? Libère ta place pour une autre élève.'}
+          onClose={() => setViewing(null)}
+          onSave={() => (viewing.cancelled ? setViewing(null) : cancelBooking(viewing, true))}
+          saving={cancel.isPending}
+          closeLabel="Fermer"
+          submitLabel={viewing.cancelled ? 'OK' : 'Annuler ma réservation'}
+          savingLabel="Annulation…"
+          danger={!viewing.cancelled}
+        >
+          <ClassFacts session={viewing} />
         </EditSheet>
       )}
     </div>

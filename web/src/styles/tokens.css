@@ -5,34 +5,40 @@
 @import url('https://fonts.googleapis.com/css2?family=Caprasimo:wght@400&family=Cormorant+Garamond:wght@300;400&family=Figtree:wght@300;400;500;600;700&display=swap');
 
 :root {
-  /* Palette « détente » : fond crème clair, cartes en blanc chaud qui s'en
-     détachent doucement, sable léger pour les champs et les feuilles. */
-  --color-bg: #f9f4ed;
-  --color-surface: #f1e9dd;
-  --color-text: #201e1d;
-  --color-accent: #c67139;
+  /* Palette de la maquette : fond pêche crème, cartes blanc chaud aux ombres
+     teintées, terracotta pour la marque et les actions, sauge pour les statuts
+     « actif ». */
+  --color-bg: #fcefe4;
+  --color-bg-gradient: linear-gradient(180deg, #fdf4eb 0%, #fcefe4 45%, #f9e7d8 100%);
+  --color-surface: #f8eadf;
+  --color-text: #2a201b;
+  --color-accent: #c95d33;
   --color-accent-2: #7a8a5e;
-  --color-divider: color-mix(in srgb, #201e1d 11%, transparent);
+  --color-divider: color-mix(in srgb, #9a6440 13%, transparent);
 
-  --color-neutral-100: #fffdf9;
-  --color-neutral-200: #f2ece2;
-  --color-neutral-300: #e3dbce;
-  --color-neutral-400: #c0b6a5;
-  --color-neutral-500: #a19786;
-  --color-neutral-600: #82796a;
-  --color-neutral-700: #645c50;
-  --color-neutral-800: #474238;
-  --color-neutral-900: #2e2b25;
+  --color-neutral-100: #fffaf6;
+  --color-neutral-200: #f6ebe1;
+  --color-neutral-300: #ecdccf;
+  --color-neutral-400: #cdb9a8;
+  --color-neutral-500: #a8968a;
+  --color-neutral-600: #85776c;
+  --color-neutral-700: #675b52;
+  --color-neutral-800: #4a3f38;
+  --color-neutral-900: #2e2620;
 
-  --color-accent-100: #fff2eb;
-  --color-accent-200: #ffe1d0;
-  --color-accent-300: #ffc6a5;
-  --color-accent-400: #f6a06b;
-  --color-accent-500: #d67f48;
-  --color-accent-600: #b2622d;
-  --color-accent-700: #8c491a;
-  --color-accent-800: #643312;
-  --color-accent-900: #402310;
+  --color-accent-100: #fdeee4;
+  --color-accent-200: #fbdfcf;
+  --color-accent-300: #f5c4a8;
+  --color-accent-400: #ec9b73;
+  --color-accent-500: #d96c41;
+  --color-accent-600: #c65a31;
+  --color-accent-700: #b54d27;
+  --color-accent-800: #933d1f;
+  --color-accent-900: #5e2714;
+  /* Dégradé des actions principales (boutons, lecture, onglet actif). */
+  --gradient-accent: linear-gradient(145deg, #d8693d 0%, #c2552c 55%, #b04824 100%);
+  --shadow-accent: 0 10px 22px -10px color-mix(in srgb, #b54d27 80%, transparent);
+  --shadow-card: 0 1px 2px color-mix(in srgb, #8a5232 6%, transparent), 0 8px 24px -12px color-mix(in srgb, #8a5232 20%, transparent);
 
   --color-accent-2-100: #eef3e5;
   --color-accent-2-200: #dfe8d1;
@@ -59,9 +65,9 @@
   --radius-md: 16px;
   --radius-lg: 28px;
 
-  --shadow-sm: 0 1px 3px color-mix(in srgb, #5a4a35 10%, transparent);
-  --shadow-md: 0 4px 14px color-mix(in srgb, #5a4a35 11%, transparent);
-  --shadow-lg: 0 14px 36px color-mix(in srgb, #5a4a35 16%, transparent);
+  --shadow-sm: 0 1px 3px color-mix(in srgb, #7a4a2c 10%, transparent);
+  --shadow-md: 0 4px 14px color-mix(in srgb, #7a4a2c 11%, transparent);
+  --shadow-lg: 0 14px 36px color-mix(in srgb, #7a4a2c 16%, transparent);
 }
 
 *, *::before, *::after { box-sizing: border-box; }
@@ -75,7 +81,7 @@ html {
 a, button, label, .input, .tab-item, [role="button"] { touch-action: manipulation; }
 body {
   margin: 0;
-  background: var(--color-bg);
+  background: var(--color-bg) var(--color-bg-gradient) no-repeat fixed;
   color: var(--color-text);
   font-family: var(--font-body);
   font-size: 15px;
@@ -104,7 +110,8 @@ button, input, select, textarea { font-family: var(--font-body); }
 /* — buttons —
    Un seul système pour toute l'application :
    variantes  .btn-primary (terracotta, action principale) · .btn-sage (lancer une séance)
-              .btn-secondary (action alternative) · .btn-ghost (lien d'action) · .btn-danger
+              .btn-secondary (action alternative) · .btn-outline (contour terracotta)
+              .btn-ghost (lien d'action) · .btn-danger (suppression)
    tailles    .btn-sm (38px) · défaut (46px) · .btn-lg (54px) · .btn-block (pleine largeur)
    États communs : survol, enfoncement au toucher, anneau de focus clavier, désactivé. */
 .btn {
@@ -122,24 +129,26 @@ button, input, select, textarea { font-family: var(--font-body); }
 .btn:disabled, .btn[aria-disabled="true"] { opacity: .5; cursor: not-allowed; box-shadow: none; }
 
 .btn-primary {
-  background: var(--color-accent-700); border-color: transparent; color: #fff;
-  box-shadow: 0 8px 18px -8px color-mix(in srgb, var(--color-accent-700) 70%, transparent);
+  background: var(--color-accent-700) var(--gradient-accent); border-color: transparent; color: #fff;
+  box-shadow: var(--shadow-accent);
 }
 .btn-primary:hover:not(:disabled) {
-  background: var(--color-accent-800); color: #fff;
-  box-shadow: 0 10px 22px -8px color-mix(in srgb, var(--color-accent-800) 75%, transparent);
+  background: var(--color-accent-800) var(--gradient-accent); color: #fff; filter: brightness(.94);
+  box-shadow: 0 12px 26px -10px color-mix(in srgb, var(--color-accent-800) 80%, transparent);
 }
 .btn-sage {
   background: var(--color-accent-2-700); border-color: transparent; color: #fff;
   box-shadow: 0 8px 18px -8px color-mix(in srgb, var(--color-accent-2-700) 70%, transparent);
 }
 .btn-sage:hover:not(:disabled) { background: var(--color-accent-2-800); color: #fff; }
-.btn-secondary { background: var(--color-neutral-100); border-color: var(--color-divider); }
+.btn-secondary { background: var(--color-neutral-100); border-color: var(--color-divider); box-shadow: var(--shadow-card); }
 .btn-secondary:hover:not(:disabled) { background: var(--color-neutral-200); border-color: var(--color-neutral-400); }
 .btn-ghost { background: transparent; border-color: transparent; color: var(--color-accent-700); min-height: 40px; padding: 0 12px; }
 .btn-ghost:hover:not(:disabled) { background: var(--color-accent-100); color: var(--color-accent-800); }
 .btn-danger { background: transparent; border-color: color-mix(in srgb, #9a3220 32%, transparent); color: #9a3220; }
 .btn-danger:hover:not(:disabled) { background: #f8ddd6; color: #8a2c1b; border-color: color-mix(in srgb, #9a3220 45%, transparent); }
+.btn-outline { background: color-mix(in srgb, var(--color-neutral-100) 55%, transparent); border: 1.5px solid var(--color-accent-500); color: var(--color-accent-700); }
+.btn-outline:hover:not(:disabled) { background: var(--color-accent-100); color: var(--color-accent-800); border-color: var(--color-accent-700); }
 
 .btn-sm { min-height: 38px; padding: 0 15px; font-size: 13px; gap: 6px; }
 .btn-lg { min-height: 54px; padding: 0 28px; font-size: 15.5px; }
@@ -175,3 +184,8 @@ button, input, select, textarea { font-family: var(--font-body); }
 }
 
 .text-muted { color: var(--color-neutral-600); }
+/* Lu par les lecteurs d'écran, invisible à l'écran. */
+.sr-only {
+  position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden;
+  clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0;
+}

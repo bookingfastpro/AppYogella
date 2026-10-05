@@ -3,7 +3,7 @@ import { useAuth } from '../lib/AuthContext'
 import { usePlans, usePrograms, usePractice } from '../lib/hooks'
 import { useGatedOpen } from '../lib/useGatedOpen'
 import { MOODS } from '../lib/moods'
-import { IconPlay, IconChevronRight, IconLock } from '../components/icons'
+import { IconPlay, IconChevronRight, IconLock, IconArrowRight } from '../components/icons'
 import { ProgramCard } from '../components/ProgramCard'
 import { NotificationBell } from '../components/NotificationBell'
 import { SectionTitle } from '../components/ui'
@@ -54,7 +54,7 @@ export default function Home() {
           <button
             key={m.label}
             type="button"
-            className="mood-btn"
+            className={`mood-btn${m.key ? '' : ' other'}`}
             style={m.span ? { gridColumn: `span ${m.span}` } : undefined}
             onClick={() => navigate(m.key ? `/humeur/${m.key}` : '/explorer')}
           >
@@ -96,7 +96,7 @@ export default function Home() {
           title="Nos programmes"
           aside={
             <Link to="/explorer" className="ui-link">
-              Tout explorer
+              Tout explorer <IconArrowRight size={16} />
             </Link>
           }
         />

@@ -77,6 +77,9 @@ export interface Universe {
   fg: string
   dest: 'categorie' | 'article' | 'programme'
   order: number
+  /** Photo de l'univers (peut manquer sur le serveur), puis vignette d'une de ses séances. */
+  imageUrl: string | null
+  fallbackImageUrl: string | null
 }
 
 export interface ProgramSummary {

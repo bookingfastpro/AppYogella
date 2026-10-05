@@ -1,17 +1,41 @@
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { usePrograms, useUniverses } from '../lib/hooks'
 import { api } from '../lib/api'
-import type { Course, ProgramSummary } from '../lib/api'
+import type { Course, ProgramSummary, Universe } from '../lib/api'
 import { Loader } from '../components/Loader'
 import { PageHeader, SectionTitle } from '../components/ui'
 import { ProgramCard } from '../components/ProgramCard'
+
+/**
+ * Tuile d'univers en photo : l'image de l'univers, sinon la vignette d'une de
+ * ses séances ; sans image, un aplat à sa couleur. Le titre est posé sur un
+ * dégradé sombre pour rester lisible sur n'importe quelle photo.
+ */
+function UniverseTile({ universe, onSelect }: { universe: Universe; onSelect: () => void }) {
+  const sources = [universe.imageUrl, universe.fallbackImageUrl].filter((s): s is string => !!s)
+  const [failed, setFailed] = useState(0)
+  const src = sources[failed]
+
+  return (
+    <button
+      type="button"
+      className={`univers-tile${src ? ' has-photo' : ''}`}
+      style={src ? undefined : { backgroundColor: universe.bg, color: universe.fg }}
+      onClick={onSelect}
+    >
+      {src && <img className="univers-img" src={src} alt="" loading="lazy" onError={() => setFailed((n) => n + 1)} />}
+      <span className="label">{universe.label}</span>
+    </button>
+  )
+}
 
 export default function Explorer() {
   const navigate = useNavigate()
   const { data: universes, isPending } = useUniverses()
   const { data: programs } = usePrograms(false)
 
-  async function onSelect(u: NonNullable<typeof universes>[number]) {
+  async function onSelect(u: Universe) {
     if (u.dest === 'categorie') {
       navigate(`/categorie/${u.slug}`)
     } else if (u.dest === 'article') {
@@ -32,9 +56,9 @@ export default function Explorer() {
       {(programs?.length ?? 0) > 0 && (
         <section>
           <SectionTitle title="Programmes" aside={<span className="ui-count">{programs!.length}</span>} />
-          <div className="card-rail">
+          <div className="card-grid-2">
             {programs!.map((p) => (
-              <ProgramCard key={p.id} program={p} />
+              <ProgramCard key={p.id} program={p} variant="stacked" />
             ))}
           </div>
         </section>
@@ -44,10 +68,7 @@ export default function Explorer() {
         <SectionTitle title="Nos univers" />
         <div className="card-grid">
           {(universes ?? []).map((u) => (
-            <button key={u.id} type="button" className="univers-tile" style={{ background: u.bg, color: u.fg }} onClick={() => onSelect(u)}>
-              <span className="label">{u.label}</span>
-              <span className="blob" />
-            </button>
+            <UniverseTile key={u.id} universe={u} onSelect={() => onSelect(u)} />
           ))}
         </div>
       </section>

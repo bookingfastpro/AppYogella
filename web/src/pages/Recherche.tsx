@@ -2,8 +2,8 @@ import { useMemo, useState } from 'react'
 import { useCourses } from '../lib/hooks'
 import { matches } from '../lib/search'
 import { CourseRow } from '../components/CourseRow'
-import { EmptyState, PageHeader, SearchInput, SectionTitle } from '../components/ui'
-import { IconSearch } from '../components/icons'
+import { EmptyState, SearchInput, SectionTitle } from '../components/ui'
+import { IconSearch, IconSliders } from '../components/icons'
 import { Loader } from '../components/Loader'
 
 const ALL = 'Tout'
@@ -11,6 +11,7 @@ const ALL = 'Tout'
 export default function Recherche() {
   const [query, setQuery] = useState('')
   const [tab, setTab] = useState(ALL)
+  const [showFilters, setShowFilters] = useState(true)
   // Le catalogue est chargé une fois et filtré sur place : la recherche répond
   // à chaque frappe, sans aller-retour serveur, et ignore les accents.
   const { data: courses, isPending } = useCourses()
@@ -38,19 +39,33 @@ export default function Recherche() {
   if (isPending) return <Loader />
 
   return (
-    <div className="screen">
-      <PageHeader title="Recherche" subtitle="Trouve une séance par son nom ou son univers." />
+    <div className="screen search-screen">
+      <h1 className="sr-only">Rechercher une séance</h1>
 
       <div className="ui-sticky-search">
-        <SearchInput value={query} onChange={setQuery} label="Rechercher une séance" placeholder="Yoga du soir, respiration…" />
-        <div className="pill-row" role="group" aria-label="Filtrer par univers">
-          {[[ALL, all.length] as const, ...universes].map(([name, count]) => (
-            <button key={name} type="button" aria-pressed={tab === name} className={`pill${tab === name ? ' active' : ''}`} onClick={() => setTab(name)}>
-              {name}
-              <span className="pill-count">{count}</span>
-            </button>
-          ))}
+        <div className="search-bar">
+          <SearchInput value={query} onChange={setQuery} label="Rechercher une séance" placeholder="Yoga du soir, respiration…" />
+          <button
+            type="button"
+            className={`search-filter-btn${showFilters ? ' on' : ''}`}
+            aria-label={showFilters ? 'Masquer les filtres' : 'Afficher les filtres'}
+            aria-expanded={showFilters}
+            aria-controls="search-filters"
+            onClick={() => setShowFilters((v) => !v)}
+          >
+            <IconSliders size={21} />
+          </button>
         </div>
+        {showFilters && (
+          <div id="search-filters" className="pill-row" role="group" aria-label="Filtrer par univers">
+            {[[ALL, all.length] as const, ...universes].map(([name, count]) => (
+              <button key={name} type="button" aria-pressed={tab === name} className={`pill${tab === name ? ' active' : ''}`} onClick={() => setTab(name)}>
+                {name}
+                <span className="pill-count">{count}</span>
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
       {(query || tab !== ALL) && results.length > 0 && (

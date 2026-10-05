@@ -41,9 +41,9 @@ export default function Pratique() {
       <section className="practice-card" aria-label="Objectif de la semaine">
         <div className="practice-ring">
           <svg width="88" height="88" viewBox="0 0 88 88" aria-hidden="true">
-            <circle cx="44" cy="44" r={R} fill="none" stroke="var(--color-neutral-300)" strokeWidth="9" />
+            <circle cx="44" cy="44" r={R} fill="none" stroke="var(--color-accent-200)" strokeWidth="8" />
             <circle
-              cx="44" cy="44" r={R} fill="none" stroke="var(--color-accent-2-600)" strokeWidth="9" strokeLinecap="round"
+              cx="44" cy="44" r={R} fill="none" stroke="var(--color-accent-600)" strokeWidth="8" strokeLinecap="round"
               strokeDasharray={CIRC} strokeDashoffset={CIRC * (1 - fraction)} transform="rotate(-90 44 44)"
               className="practice-ring-arc"
             />

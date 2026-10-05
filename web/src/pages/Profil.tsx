@@ -5,7 +5,7 @@ import { useToast } from '../lib/ToastContext'
 import { usePlans } from '../lib/hooks'
 import { api, ApiError } from '../lib/api'
 import { PageHeader } from '../components/ui'
-import { IconChevronRight, IconHeart, IconLayers, IconLogOut, IconPulse, IconCard } from '../components/icons'
+import { IconChevronRight, IconHeart, IconSettings, IconLogOut, IconPulse, IconCard } from '../components/icons'
 
 function formatDate(iso: string | null) {
   if (!iso) return ''
@@ -51,7 +51,7 @@ export default function Profil() {
     : 'Les séances premium restent verrouillées.'
 
   const rows = [
-    ...(user.isAdmin ? [{ label: 'Administration', icon: IconLayers, go: () => navigate('/admin') }] : []),
+    ...(user.isAdmin ? [{ label: 'Administration', icon: IconSettings, go: () => navigate('/admin') }] : []),
     { label: 'Mes favoris', icon: IconHeart, go: () => navigate('/favoris') },
     { label: 'Ma pratique', icon: IconPulse, go: () => navigate('/pratique') },
   ]
@@ -87,7 +87,7 @@ export default function Profil() {
         </div>
         <button
           type="button"
-          className={`btn ${hasAccess ? 'ui-btn-soft' : 'ui-btn-primary'}`}
+          className={`btn btn-block ${hasAccess ? 'ui-btn-soft' : 'ui-btn-primary'}`}
           disabled={manageSubscription.isPending}
           onClick={() => (hasAccess ? manageSubscription.mutate() : navigate('/abonnement'))}
         >
@@ -107,7 +107,7 @@ export default function Profil() {
         ))}
       </nav>
 
-      <button type="button" className="btn btn-danger btn-block" onClick={() => logout().then(() => navigate('/login'))}>
+      <button type="button" className="btn btn-outline btn-lg btn-block" onClick={() => logout().then(() => navigate('/login'))}>
         <IconLogOut size={18} />
         Se déconnecter
       </button>

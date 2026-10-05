@@ -39,7 +39,7 @@ export function NotificationBell() {
         aria-expanded={open}
         onClick={() => setOpen(true)}
       >
-        <IconBell size={19} />
+        <IconBell size={21} filled />
         {unread > 0 && <span className="notif-badge" aria-hidden="true">{unread > 9 ? '9+' : unread}</span>}
       </button>
       {open && createPortal(<NotificationPanel data={data} onClose={close} />, document.body)}

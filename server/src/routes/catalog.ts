@@ -31,17 +31,33 @@ function programCourses() {
 export const catalogRouter = Router();
 
 catalogRouter.get("/universes", async (_req, res) => {
-  const universes = await prisma.universe.findMany({ orderBy: { order: "asc" } });
+  const universes = await prisma.universe.findMany({
+    orderBy: { order: "asc" },
+    include: {
+      courses: {
+        where: { ...publishedWhere(), OR: [{ thumbnailUrl: { not: null } }, { youtubeId: { not: null } }] },
+        select: { thumbnailUrl: true, youtubeId: true },
+        orderBy: [{ publishedAt: "desc" }, { createdAt: "desc" }],
+        take: 1,
+      },
+    },
+  });
   res.json({
-    universes: universes.map((u) => ({
-      id: u.id,
-      slug: u.slug,
-      label: u.label,
-      bg: u.bg,
-      fg: u.fg,
-      dest: u.dest,
-      order: u.order,
-    })),
+    universes: universes.map((u) => {
+      const first = u.courses[0];
+      return {
+        id: u.id,
+        slug: u.slug,
+        label: u.label,
+        bg: u.bg,
+        fg: u.fg,
+        dest: u.dest,
+        order: u.order,
+        // Photo de la tuile : l'image de l'univers, sinon la vignette de sa séance la plus récente.
+        imageUrl: u.imagePath,
+        fallbackImageUrl: first ? first.thumbnailUrl ?? (first.youtubeId ? youtubeThumbnail(first.youtubeId) : null) : null,
+      };
+    }),
   });
 });
 

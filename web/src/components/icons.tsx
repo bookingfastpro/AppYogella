@@ -183,10 +183,29 @@ export const IconCirclePause = (p: IconProps) => (
     <path d="M8 12h8" />
   </Svg>
 )
-export const IconBell = (p: IconProps) => (
+export const IconBell = ({ filled, ...p }: IconProps & { filled?: boolean }) => (
   <Svg {...p} strokeWidth={p.strokeWidth ?? 2.4}>
-    <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9" />
+    <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9" fill={filled ? 'currentColor' : 'none'} />
     <path d="M10.3 21a2 2 0 0 0 3.4 0" />
+  </Svg>
+)
+export const IconArrowRight = (p: IconProps) => (
+  <Svg {...p} strokeWidth={p.strokeWidth ?? 2.4}>
+    <path d="M5 12h14M13 6l6 6-6 6" />
+  </Svg>
+)
+export const IconSliders = (p: IconProps) => (
+  <Svg {...p} strokeWidth={p.strokeWidth ?? 2.2}>
+    <path d="M4 6h9M17 6h3M4 12h3M11 12h9M4 18h11M19 18h1" />
+    <circle cx="15" cy="6" r="2" />
+    <circle cx="9" cy="12" r="2" />
+    <circle cx="17" cy="18" r="2" />
+  </Svg>
+)
+export const IconSettings = (p: IconProps) => (
+  <Svg {...p} strokeWidth={p.strokeWidth ?? 2.2}>
+    <circle cx="12" cy="12" r="3" />
+    <path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z" />
   </Svg>
 )
 export const IconPlus = (p: IconProps) => (
