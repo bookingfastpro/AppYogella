@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { EditSheet } from '../../components/AdminEdit'
 import { AdminPageHeader, Badge, EmptyState, StatCard, StatGrid, Switch } from '../../components/AdminUI'
-import { IconCalendar, IconChevronLeft, IconChevronRight, IconClock, IconMapPin, IconPencil, IconPlus, IconRepeat, IconTrash, IconUser, IconUsers } from '../../components/icons'
+import { IconCalendar, IconChevronRight, IconClock, IconMapPin, IconPencil, IconPlus, IconRepeat, IconTrash, IconUser, IconUsers } from '../../components/icons'
 import { Loader } from '../../components/Loader'
 import { useToast } from '../../lib/ToastContext'
 import { ApiError } from '../../lib/api'
@@ -71,7 +71,7 @@ export default function AdminPlanning() {
       <section className="plan-picker" aria-label="Choisir une date">
         <div className="plan-picker-top">
           <button type="button" className="icon-btn" aria-label="Jour précédent" onClick={() => setDate(addDays(date, -1))}>
-            <IconChevronLeft size={16} />
+            <IconChevronRight size={16} style={{ transform: 'rotate(180deg)' }} />
           </button>
           <label className="plan-date">
             <IconCalendar size={17} />
