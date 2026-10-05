@@ -103,16 +103,18 @@ export default function AdminNotifications() {
           <div className="notif-item unread adm-preview-item">
             <div className="notif-item-btn">
               <span className="notif-kind announcement" aria-hidden="true">
-                <IconBell size={16} />
+                <IconBell size={18} filled />
               </span>
               <span className="notif-item-main">
                 <span className="notif-item-head">
                   <span className="notif-item-title">{title.trim() || 'Titre de la notification'}</span>
-                  <span className="notif-item-time">à l'instant</span>
+                  <span className="notif-dot" aria-hidden="true" />
                 </span>
                 <span className="notif-item-body">{body.trim() || 'Le message apparaîtra ici, tel que les utilisatrices le liront.'}</span>
+                <span className="notif-item-foot">
+                  <span className="notif-item-time">à l'instant</span>
+                </span>
               </span>
-              <span className="notif-dot" aria-hidden="true" />
             </div>
           </div>
         </div>
