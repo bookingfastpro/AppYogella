@@ -324,6 +324,8 @@
 .search-filter-btn:active { transform: scale(.93); }
 .search-filter-btn:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--color-bg), 0 0 0 5px var(--color-accent-500); }
 .search-screen .ui-section-title h2 { font-size: 24px; }
+/* Raccourci vers la recherche, en haut à droite de l'en-tête Explorer. */
+.ui-page-head > .search-filter-btn { align-self: flex-start; width: 48px; height: 48px; margin-top: 2px; }
 .ui-search:focus-within { border-color: var(--color-accent-600); box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-accent-500) 20%, transparent); }
 .ui-search input { flex: 1; min-width: 0; border: 0; background: none; outline: none; font: inherit; font-size: 15px; color: var(--color-text); }
 .ui-search input::-webkit-search-cancel-button { display: none; }

@@ -4,11 +4,11 @@ import { useNotifications } from '../lib/hooks'
 import { IconHome, IconSearch, IconPulse, IconCalendar, IconUser } from './icons'
 
 // Cinq onglets au plus sur mobile : les favoris restent accessibles depuis le
-// Profil et depuis chaque séance. « Explorer » ouvre la recherche et reste
-// actif dans tout le catalogue (univers, catégories, humeurs).
+// Profil et depuis chaque séance. « Explorer » ouvre les programmes et les
+// univers, et reste actif dans tout le catalogue (recherche, catégories, humeurs).
 const TABS = [
   { to: '/home', label: 'Accueil', Icon: IconHome },
-  { to: '/recherche', label: 'Explorer', Icon: IconSearch, also: ['/explorer', '/categorie', '/humeur', '/experts'] },
+  { to: '/explorer', label: 'Explorer', Icon: IconSearch, also: ['/recherche', '/categorie', '/humeur', '/experts'] },
   { to: '/reserver', label: 'Studio', Icon: IconCalendar },
   { to: '/pratique', label: 'Ma pratique', Icon: IconPulse },
   { to: '/profil', label: 'Profil', Icon: IconUser, also: ['/favoris'] },

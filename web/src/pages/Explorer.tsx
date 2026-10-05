@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
+import { IconSearch } from '../components/icons'
 import { usePrograms, useUniverses } from '../lib/hooks'
 import { api } from '../lib/api'
 import type { Course, ProgramSummary, Universe } from '../lib/api'
@@ -51,7 +52,15 @@ export default function Explorer() {
 
   return (
     <div className="screen">
-      <PageHeader title="Explorer" subtitle="Des programmes guidés et des univers à découvrir à ton rythme." />
+      <PageHeader
+        title="Explorer"
+        subtitle="Des programmes guidés et des univers à découvrir à ton rythme."
+        aside={
+          <Link to="/recherche" className="search-filter-btn" aria-label="Rechercher une séance">
+            <IconSearch size={21} />
+          </Link>
+        }
+      />
 
       {(programs?.length ?? 0) > 0 && (
         <section>
