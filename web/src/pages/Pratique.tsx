@@ -4,6 +4,7 @@ import { useGatedOpen } from '../lib/useGatedOpen'
 import { EmptyState, PageHeader, SectionTitle } from '../components/ui'
 import { IconLayers, IconLock, IconChevronRight, IconCheck, IconPlay, IconPulse } from '../components/icons'
 import { Loader } from '../components/Loader'
+import { CountUp } from '../components/CountUp'
 
 const R = 34
 const CIRC = 2 * Math.PI * R
@@ -47,7 +48,9 @@ export default function Pratique() {
               className="practice-ring-arc"
             />
           </svg>
-          <span className="practice-ring-value">{Math.round(fraction * 100)}%</span>
+          <span className="practice-ring-value">
+            <CountUp value={Math.round(fraction * 100)} duration={1100} delay={150} />%
+          </span>
         </div>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div className="practice-eyebrow">Objectif de la semaine</div>
@@ -60,15 +63,15 @@ export default function Pratique() {
 
       <div className="practice-stats">
         <div className="practice-stat">
-          <span className="value">{weekly.sessionCount}</span>
+          <span className="value"><CountUp value={weekly.sessionCount} delay={200} /></span>
           <span className="label">séance{weekly.sessionCount > 1 ? 's' : ''}</span>
         </div>
         <div className="practice-stat">
-          <span className="value">{weekly.totalMinutes}</span>
+          <span className="value"><CountUp value={weekly.totalMinutes} delay={260} /></span>
           <span className="label">minutes</span>
         </div>
         <div className="practice-stat">
-          <span className="value">{activeDays}</span>
+          <span className="value"><CountUp value={activeDays} delay={320} /></span>
           <span className="label">jour{activeDays > 1 ? 's' : ''} actif{activeDays > 1 ? 's' : ''}</span>
         </div>
       </div>
