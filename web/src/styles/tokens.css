@@ -37,7 +37,6 @@
   --color-accent-900: #5e2714;
   /* Dégradé des actions principales (boutons, lecture, onglet actif). */
   --gradient-accent: linear-gradient(145deg, #d8693d 0%, #c2552c 55%, #b04824 100%);
-  --shadow-accent: 0 10px 22px -10px color-mix(in srgb, #b54d27 80%, transparent);
   --shadow-card: 0 1px 2px color-mix(in srgb, #8a5232 6%, transparent), 0 8px 24px -12px color-mix(in srgb, #8a5232 20%, transparent);
 
   --color-accent-2-100: #eef3e5;
@@ -128,20 +127,12 @@ button, input, select, textarea { font-family: var(--font-body); }
 .btn:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--color-bg), 0 0 0 5px var(--color-accent-500); }
 .btn:disabled, .btn[aria-disabled="true"] { opacity: .5; cursor: not-allowed; box-shadow: none; }
 
-.btn-primary {
-  background: var(--color-accent-700) var(--gradient-accent); border-color: transparent; color: #fff;
-  box-shadow: var(--shadow-accent);
-}
-.btn-primary:hover:not(:disabled) {
-  background: var(--color-accent-800) var(--gradient-accent); color: #fff; filter: brightness(.94);
-  box-shadow: 0 12px 26px -10px color-mix(in srgb, var(--color-accent-800) 80%, transparent);
-}
-.btn-sage {
-  background: var(--color-accent-2-700); border-color: transparent; color: #fff;
-  box-shadow: 0 8px 18px -8px color-mix(in srgb, var(--color-accent-2-700) 70%, transparent);
-}
+/* Boutons à plat : aucune ombre portée, le dégradé suffit à les détacher du fond. */
+.btn-primary { background: var(--color-accent-700) var(--gradient-accent); border-color: transparent; color: #fff; }
+.btn-primary:hover:not(:disabled) { background: var(--color-accent-800) var(--gradient-accent); color: #fff; filter: brightness(.94); }
+.btn-sage { background: var(--color-accent-2-700); border-color: transparent; color: #fff; }
 .btn-sage:hover:not(:disabled) { background: var(--color-accent-2-800); color: #fff; }
-.btn-secondary { background: var(--color-neutral-100); border-color: var(--color-divider); box-shadow: var(--shadow-card); }
+.btn-secondary { background: var(--color-neutral-100); border-color: var(--color-divider); }
 .btn-secondary:hover:not(:disabled) { background: var(--color-neutral-200); border-color: var(--color-neutral-400); }
 .btn-ghost { background: transparent; border-color: transparent; color: var(--color-accent-700); min-height: 40px; padding: 0 12px; }
 .btn-ghost:hover:not(:disabled) { background: var(--color-accent-100); color: var(--color-accent-800); }
