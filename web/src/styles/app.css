@@ -1677,9 +1677,15 @@ button.notif-item-btn:hover .notif-item-link svg { transform: translateX(3px); }
    iOS décalait l'iframe transformée après la rotation. */
 .player-stage.is-full .player-media {
   --w: min(calc(100cqw - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px)), calc(100cqh * 16 / 9));
-  inset: 0; margin: auto; transform: none; width: var(--w); height: calc(var(--w) * 9 / 16);
+  /* Centrée dans la zone visible : l'encoche ne cache plus un côté de la vidéo. */
+  inset: 0 env(safe-area-inset-right, 0px) 0 env(safe-area-inset-left, 0px);
+  margin: auto; transform: none; width: var(--w); height: calc(var(--w) * 9 / 16);
 }
 .player-stage.is-full .player-topbar { display: none; }
+.player-debug {
+  position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 10; margin: 0; padding: 8px 10px;
+  border-radius: 10px; background: rgba(0, 0, 0, .75); color: #fff; font: 600 11px/1.5 ui-monospace, monospace; white-space: pre; pointer-events: none;
+}
 .player-stage.is-full.hud-hidden { cursor: none; }
 .player-fs-corner { position: absolute; right: 12px; bottom: 12px; z-index: 3; }
 .player-tapzone { position: absolute; inset: 0; z-index: 3; border: 0; padding: 0; background: transparent; cursor: pointer; }
