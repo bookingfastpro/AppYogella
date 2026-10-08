@@ -92,39 +92,6 @@ function useFullscreen(stage: React.RefObject<HTMLElement | null>) {
   return { isFull, immersive, toggle: () => (isFull ? exit() : void enter()), exit }
 }
 
-// ponytail: diagnostic temporaire du centrage en plein écran (?debug dans l'adresse) ; à retirer une fois le décalage iPhone réglé.
-const DEBUG_LAYOUT = typeof location !== 'undefined' && location.search.includes('debug')
-
-function LayoutDebug({ stage }: { stage: React.RefObject<HTMLElement | null> }) {
-  const [text, setText] = useState('')
-  useEffect(() => {
-    const probe = document.createElement('div')
-    probe.style.cssText = 'position:fixed;visibility:hidden;padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)'
-    document.body.appendChild(probe)
-    const r = (el: Element | null | undefined) => {
-      const b = el?.getBoundingClientRect()
-      return b ? `${Math.round(b.left)},${Math.round(b.top)} ${Math.round(b.width)}×${Math.round(b.height)}` : '—'
-    }
-    const t = setInterval(() => {
-      const s = getComputedStyle(probe)
-      const vv = window.visualViewport
-      setText(
-        [
-          `écran ${innerWidth}×${innerHeight}  vv ${vv ? `${Math.round(vv.width)}×${Math.round(vv.height)} +${Math.round(vv.offsetLeft)},${Math.round(vv.offsetTop)} x${vv.scale.toFixed(2)}` : '—'}`,
-          `zone sûre G${s.paddingLeft} D${s.paddingRight} H${s.paddingTop} B${s.paddingBottom}`,
-          `cadre ${r(stage.current)}`,
-          `vidéo ${r(stage.current?.querySelector('iframe, video'))}`,
-        ].join('\n'),
-      )
-    }, 500)
-    return () => {
-      clearInterval(t)
-      probe.remove()
-    }
-  }, [stage])
-  return <pre className="player-debug">{text}</pre>
-}
-
 /** Commandes posées sur l'image en plein écran : masquées après 3 s de lecture, réaffichées au toucher. */
 function useAutoHide(active: boolean, playing: boolean) {
   const [visible, setVisible] = useState(true)
@@ -284,7 +251,6 @@ export default function Lecteur() {
         ref={stageRef}
         onPointerMove={fullscreen.isFull ? hud.poke : undefined}
       >
-        {DEBUG_LAYOUT && <LayoutDebug stage={stageRef} />}
         {isYoutube ? (
           // Conteneur remplacé par le lecteur YouTube, piloté par useYouTubePlayer.
           <div ref={yt.containerRef} className="player-media yt-host" />
