@@ -1670,12 +1670,14 @@ button.notif-item-btn:hover .notif-item-link svg { transform: translateX(3px); }
 }
 /* Plein écran : la vidéo garde son 16:9 entier, centrée dans la zone sûre (hors encoche) ;
    les bandes restantes sont du même noir que la vidéo. */
-.player-stage.is-full { background: #000; }
+.player-stage.is-full { background: #000; container-type: size; }
 /* Hauteur explicite (pas d'aspect-ratio) : Safari ne résout pas les 100% de hauteur
-   de l'iframe sur une hauteur déduite d'un ratio, et la vidéo s'écrasait en une ligne. */
+   de l'iframe sur une hauteur déduite d'un ratio, et la vidéo s'écrasait en une ligne.
+   Tailles en unités du cadre (cqw/cqh) et centrage par margin:auto, sans transform :
+   iOS décalait l'iframe transformée après la rotation. */
 .player-stage.is-full .player-media {
-  --w: min(calc(100vw - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px)), calc(100dvh * 16 / 9));
-  inset: auto; top: 50%; left: 50%; transform: translate(-50%, -50%); width: var(--w); height: calc(var(--w) * 9 / 16);
+  --w: min(calc(100cqw - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px)), calc(100cqh * 16 / 9));
+  inset: 0; margin: auto; transform: none; width: var(--w); height: calc(var(--w) * 9 / 16);
 }
 .player-stage.is-full .player-topbar { display: none; }
 .player-stage.is-full.hud-hidden { cursor: none; }
@@ -1731,10 +1733,10 @@ button.notif-item-btn:hover .notif-item-link svg { transform: translateX(3px); }
 
 /* Téléphone tourné : la vidéo occupe tout l'écran, le panneau reste accessible en faisant défiler. */
 @media (orientation: landscape) and (max-height: 500px) {
-  .player-stage { aspect-ratio: auto; height: 100vh; height: 100dvh; max-height: none; background: #000; }
+  .player-stage { aspect-ratio: auto; height: 100vh; height: 100dvh; max-height: none; background: #000; container-type: size; }
   .player-stage .player-media {
-    --w: min(calc(100vw - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px)), calc(100dvh * 16 / 9));
-    inset: auto; top: 50%; left: 50%; transform: translate(-50%, -50%); width: var(--w); height: calc(var(--w) * 9 / 16);
+    --w: min(calc(100cqw - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px)), calc(100cqh * 16 / 9));
+    inset: 0; margin: auto; width: var(--w); height: calc(var(--w) * 9 / 16);
   }
   /* Téléphone tourné : la colonne de l'app ne limite plus la largeur de la vidéo. */
   .app-shell:has(.player-screen) { max-width: none; border-inline: 0; box-shadow: none; }
