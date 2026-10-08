@@ -15,6 +15,7 @@ interface YTPlayer {
   setPlaybackRate(rate: number): void
   getCurrentTime(): number
   getDuration(): number
+  setSize(width: number, height: number): void
   destroy(): void
 }
 
@@ -94,8 +95,14 @@ export function useYouTubePlayer(videoId: string | null | undefined) {
       })
     })
 
+    // Rotation, plein écran : on redonne au lecteur la taille de son cadre, sinon
+    // iOS garde l'ancienne mise en page et la vidéo reste décalée.
+    const resize = new ResizeObserver(() => playerRef.current?.setSize?.(host.clientWidth, host.clientHeight))
+    resize.observe(host)
+
     return () => {
       cancelled = true
+      resize.disconnect()
       playerRef.current?.destroy()
       playerRef.current = null
       setReady(false)

@@ -1540,6 +1540,8 @@ button.notif-item-btn:hover .notif-item-link svg { transform: translateX(3px); }
 
 /* Le lecteur YouTube remplace ce conteneur par son propre iframe. */
 .yt-host, .yt-host iframe { width: 100%; height: 100%; border: 0; display: block; }
+/* iOS agrandit une iframe à la largeur de son contenu : 1px + min-width la force à suivre son cadre. */
+.yt-host iframe { width: 1px; min-width: 100%; height: 1px; min-height: 100%; }
 
 /* ───────────────────────── Lecteur vidéo ─────────────────────────
    Scène 16:9 pleine largeur (plein écran quand le téléphone est tourné),
@@ -1666,12 +1668,12 @@ button.notif-item-btn:hover .notif-item-link svg { transform: translateX(3px); }
   position: fixed; inset: 0; z-index: 200; width: 100%; height: 100vh; height: 100dvh;
   max-height: none; aspect-ratio: auto; border-radius: 0 !important; box-shadow: none !important;
 }
-/* Plein écran : la vidéo 16:9 couvre tout l'écran, bord à bord, centrée ;
-   ce qui dépasse (haut/bas sur un téléphone allongé) est rogné. */
+/* Plein écran : la vidéo garde son 16:9 entier, centrée dans la zone sûre (hors encoche) ;
+   les bandes restantes sont du même noir que la vidéo. */
 .player-stage.is-full { background: #000; }
 .player-stage.is-full .player-media {
   inset: auto; top: 50%; left: 50%; transform: translate(-50%, -50%); height: auto; aspect-ratio: 16 / 9;
-  width: max(100%, calc(100dvh * 16 / 9));
+  width: min(calc(100% - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px)), calc(100dvh * 16 / 9));
 }
 .player-stage.is-full .player-topbar { display: none; }
 .player-stage.is-full.hud-hidden { cursor: none; }
@@ -1730,7 +1732,7 @@ button.notif-item-btn:hover .notif-item-link svg { transform: translateX(3px); }
   .player-stage { aspect-ratio: auto; height: 100vh; height: 100dvh; max-height: none; background: #000; }
   .player-stage .player-media {
     inset: auto; top: 50%; left: 50%; transform: translate(-50%, -50%); height: auto; aspect-ratio: 16 / 9;
-    width: max(100%, calc(100dvh * 16 / 9));
+    width: min(calc(100% - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px)), calc(100dvh * 16 / 9));
   }
   /* Téléphone tourné : la colonne de l'app ne limite plus la largeur de la vidéo. */
   .app-shell:has(.player-screen) { max-width: none; border-inline: 0; box-shadow: none; }
