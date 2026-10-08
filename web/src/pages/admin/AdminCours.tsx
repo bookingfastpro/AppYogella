@@ -47,6 +47,22 @@ function MoodPicker({ value, onChange }: { value: string[]; onChange: (v: string
   )
 }
 
+/** Univers d'Explorer (« Nos univers ») où le cours apparaît : un seul choix. */
+function UniversePicker({ value, options, onChange }: { value: string; options: string[]; onChange: (v: string) => void }) {
+  return (
+    <fieldset className="field adm-fieldset">
+      <legend>Univers (Explorer · Nos univers)</legend>
+      <div className="adm-mood-picker" role="radiogroup" aria-label="Univers du cours">
+        {options.map((u) => (
+          <button key={u} type="button" role="radio" aria-checked={u === value} className={`adm-mood${u === value ? ' picked' : ''}`} onClick={() => onChange(u)}>
+            {u}
+          </button>
+        ))}
+      </div>
+    </fieldset>
+  )
+}
+
 export default function AdminCours() {
   const { data: courses, isPending } = useAdminCourses()
   const universes = useUniverseLabels()
@@ -288,18 +304,11 @@ function CourseCreateSheet({ universes, onClose }: { universes: string[]; onClos
         <label htmlFor="nc-title">Titre</label>
         <input id="nc-title" className="input" autoFocus placeholder="Yoga doux du soir" value={title} onChange={(e) => setTitle(e.target.value)} />
       </div>
+      <UniversePicker value={universe} options={universes} onChange={setUniverse} />
       <div className="adm-field-row">
         <div className="field">
           <label htmlFor="nc-dur">Durée (min)</label>
           <input id="nc-dur" className="input" inputMode="numeric" placeholder="20" value={duration} onChange={(e) => setDuration(e.target.value)} />
-        </div>
-        <div className="field">
-          <label htmlFor="nc-univ">Univers</label>
-          <select id="nc-univ" className="input" value={universe} onChange={(e) => setUniverse(e.target.value)}>
-            {universes.map((u) => (
-              <option key={u}>{u}</option>
-            ))}
-          </select>
         </div>
       </div>
       <Switch
@@ -389,18 +398,11 @@ function CourseEditSheet({
         <label htmlFor="ec-title">Titre</label>
         <input id="ec-title" className="input" value={title} onChange={(e) => setTitle(e.target.value)} />
       </div>
+      <UniversePicker value={universe} options={[...new Set([course.universe, ...universes])]} onChange={setUniverse} />
       <div className="adm-field-row">
         <div className="field">
           <label htmlFor="ec-dur">Durée (min)</label>
           <input id="ec-dur" className="input" inputMode="numeric" value={duration} onChange={(e) => setDuration(e.target.value)} />
-        </div>
-        <div className="field">
-          <label htmlFor="ec-univ">Univers</label>
-          <select id="ec-univ" className="input" value={universe} onChange={(e) => setUniverse(e.target.value)}>
-            {[...new Set([course.universe, ...universes])].map((u) => (
-              <option key={u}>{u}</option>
-            ))}
-          </select>
         </div>
       </div>
       <Switch

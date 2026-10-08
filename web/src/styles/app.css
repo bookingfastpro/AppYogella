@@ -1206,6 +1206,7 @@
   font: 600 12.5px/1 var(--font-body); transition: background .15s ease, border-color .15s ease;
 }
 .adm-mood:hover { border-color: var(--color-accent-300); }
+.adm-mood.picked { background: var(--color-accent-700) var(--gradient-accent); border-color: transparent; color: #fff; }
 .adm-segmented { display: inline-flex; gap: 4px; padding: 4px; border-radius: 999px; background: var(--color-neutral-200); align-self: flex-start; max-width: 100%; }
 .adm-segmented button {
   display: inline-flex; align-items: center; gap: 6px;
