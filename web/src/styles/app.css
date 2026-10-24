@@ -12,13 +12,25 @@
 
 .app-main {
   flex: 1;
-  padding-bottom: calc(81px + env(safe-area-inset-bottom, 0px));
+  padding-bottom: calc(71px + max(10px, calc(env(safe-area-inset-bottom, 0px) - 12px)));
+  /* App iOS/Android : le contenu commence sous la barre d'état (heure, batterie). */
+  padding-top: env(safe-area-inset-top, 0px);
   /* Colonne flex pour qu'une page puisse s'étirer sur toute la hauteur
      (le lecteur ancre ses commandes en bas de l'écran). */
   display: flex;
   flex-direction: column;
 }
 .app-main.no-tabbar { padding-bottom: 28px; }
+/* Lecteur et pages à photo d'en-tête : l'image passe sous la barre d'état. */
+.app-main:has(.player-screen), .app-main:has(> .app-sheet-page) { padding-top: 0; }
+/* Bandeau fixe sous la barre d'état (app iOS/Android) : le contenu qui défile ne
+   passe pas sous l'heure. Hauteur nulle dans un navigateur classique. */
+body::before {
+  content: ""; position: fixed; inset: 0 0 auto; z-index: 25; height: env(safe-area-inset-top, 0px); pointer-events: none;
+  background: color-mix(in srgb, var(--color-bg) 92%, transparent);
+  -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px);
+}
+body:has(.player-screen, .app-sheet-page, .auth-hero)::before { display: none; }
 /* Le lecteur va jusqu'au bord : pas de bande de fond sous sa carte. */
 .app-main.no-tabbar:has(.player-screen) { padding-bottom: 0; }
 
@@ -175,7 +187,8 @@
 }
 .tabbar .tabs {
   display: flex; justify-content: space-between;
-  padding: 9px 16px calc(10px + env(safe-area-inset-bottom, 0px));
+  /* Barre d'accueil iPhone : on la longe sans doubler l'écart (zone sûre moins 12px). */
+  padding: 9px 16px max(10px, calc(env(safe-area-inset-bottom, 0px) - 12px));
 }
 .tab-item {
   flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; border: 0;
@@ -185,7 +198,7 @@
 .tab-item.active { color: var(--color-accent-700); }
 
 .toast {
-  position: fixed; left: 50%; bottom: calc(81px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); width: calc(100% - 40px);
+  position: fixed; left: 50%; bottom: calc(71px + max(10px, calc(env(safe-area-inset-bottom, 0px) - 12px))); transform: translateX(-50%); width: calc(100% - 40px);
   max-width: 440px; background: var(--color-neutral-900); color: #fff; border-radius: 22px;
   padding: 13px 18px; font-size: 13.5px; text-align: center; box-shadow: var(--shadow-lg); z-index: 40;
 }
@@ -294,7 +307,7 @@
 
 /* Recherche : champ + filtres restent accessibles en faisant défiler les résultats. */
 .ui-sticky-search {
-  position: sticky; top: 0; z-index: 10; display: flex; flex-direction: column; gap: 16px;
+  position: sticky; top: env(safe-area-inset-top, 0px); z-index: 10; display: flex; flex-direction: column; gap: 16px;
   margin: -10px -20px -6px; padding: 10px 20px 12px;
   background: color-mix(in srgb, var(--color-bg) 92%, transparent);
   -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
@@ -868,7 +881,7 @@
 /* En-tête : retour, marque, compte, puis le menu des sections (sur sa propre
    ligne sur mobile, au centre de l'en-tête à partir de la tablette). */
 .adm-header {
-  position: sticky; top: 0; z-index: 30;
+  position: sticky; top: env(safe-area-inset-top, 0px); z-index: 30;
   background: color-mix(in srgb, var(--color-bg) 90%, transparent);
   -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px);
   border-bottom: 1px solid var(--adm-line);
